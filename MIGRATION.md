@@ -1,16 +1,18 @@
-# Xen PWA migration — Mac-tunnel → GH Pages + Cloudflare Pages
+# Xen PWA migration — adding a GH Pages + Cloudflare Pages failover layer
 
 ## Goal
 
-The Xen PWA used to die whenever `omnimind.js` on qi's Mac died (Claude Code CLI crash, machine sleep, power blip, etc.). Cloudflared showed the origin as down and the dashboards/mirror/swipe shell went black.
+The Xen PWA used to disappear whenever `omnimind.js` on qi's Mac died (Claude Code CLI crash, machine sleep, power blip, etc.). Cloudflared showed the origin as down and the dashboards/mirror/swipe shell went black.
+
+`xen.xlrd.org` (cloudflared tunnel → omnimind → `/Volumes/tech_/qi_data/Exedus/xen/pwa/`) **stays canonical and is never changed** — it remains the live system whenever the Mac is up. This migration adds a parallel always-up layer beside it, never in place of it.
 
 New architecture:
 
-- **Static UI** → `xlrdtech/xen-pwa` repo → published two ways:
-  - GH Pages at `https://xlrdtech.github.io/xen-pwa/` (always-up failover)
-  - Cloudflare Pages at `pwa.xlrd.org` (primary — adds the function tier)
-- **Function tier** → `functions/` dir in this repo, runs as Cloudflare Pages Functions on the CF edge. Independent of qi's Mac.
-- **Mac stays the source of truth** for live data, but the cloud functions cache the last-known state in KV so dashboards keep rendering when the Mac is down.
+- **Static UI** → mirrored to `xlrdtech/xen-pwa` repo → published two ways:
+  - GH Pages at `https://xlrdtech.github.io/xen-pwa/` (always-up failover, never replaces xen.xlrd.org)
+  - Cloudflare Pages at `pwa.xlrd.org` (failover that adds a function tier — separate hostname, doesn't touch xen.xlrd.org)
+- **Function tier** → `functions/` dir in this repo, runs as Cloudflare Pages Functions on the CF edge. Calls back to `xen.xlrd.org` as upstream when the Mac is alive, falls back to KV cache when it isn't.
+- **Mac stays the source of truth** for live data. The cloud functions cache the last-known state in KV so dashboards keep rendering when the Mac is down, but write traffic still drains to the Mac as soon as it's back.
 
 ## Current status (2026-05-16)
 
@@ -45,4 +47,4 @@ Net effect: the client's EventSource never sees `onerror` triggered by Mac death
 - Source: <https://github.com/xlrdtech/xen-pwa>
 - Failover (always up): <https://xlrdtech.github.io/xen-pwa/>
 - Primary (once CF Pages + DNS wired): <https://pwa.xlrd.org/>
-- Legacy Mac-tunnel: <https://xen.xlrd.org/> (still works when Mac is up; will be retired or aliased to CF Pages later)
+- Canonical Mac-tunnel: <https://xen.xlrd.org/> — **stays canonical, never retired, never repointed.** GH Pages + CF Pages are pure failover/cache; they call back to `xen.xlrd.org` as the source of truth for live data. The Mac is and remains the system of record. Per qi 2026-05-16: *"xen.xlrd.org was never to be changed"*.
