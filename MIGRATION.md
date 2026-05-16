@@ -17,7 +17,8 @@ New architecture:
 - [x] Repo populated with full `pwa/` clone (1.3 MB, no build step, all inline-HTML).
 - [x] GH Pages enabled on `main`, HTTPS enforced, building cleanly. Verified HTTP 200 on `/`, `/swipe/`, `/mirror/`, `/3/`.
 - [x] Swipe shell defaults repointed at `xlrdtech.github.io/xen-pwa` URLs — qi's daily-driver shell now survives Mac death.
-- [x] CF Pages Functions scaffolded: `/events` SSE relay (auto-reconnect upstream, stream stays open on client), `/mirror/reply`, `/api/omni/*`, `/api/gate-entry`. All have KV fallback for Mac-offline state.
+- [x] CF Pages Functions scaffolded: `/events` SSE relay (auto-reconnect upstream, stream stays open on client), `/mirror/reply`, `/api/omni/*`. All have KV fallback for Mac-offline state.
+- [x] **noauth-mandatory** — PIN gate stripped from `index.html`. `/api/gate-entry` function deleted. Zero gates / login / credential prompts on any user-facing page. Per qi 2026-05-16 + C4.
 - [ ] **CF Pages project not yet connected to repo** — qi to do in CF dashboard (one-time): Workers & Pages → Create → Pages → Connect to Git → xlrdtech/xen-pwa → main → Save. Optional KV bindings: `OMNI_CACHE`, `PENDING_REPLIES`, `PENDING_OMNI`, `GATE_LOG`.
 - [ ] **CF DNS for `pwa.xlrd.org` not yet repointed** — needs CNAME → xlrdtech.github.io (proxy OFF for GH-Pages-only) OR set automatically by CF Pages once connected.
 - [ ] Mac-side drain script for the KV queues (so queued replies actually get delivered when the Mac comes back).

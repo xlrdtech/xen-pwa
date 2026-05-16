@@ -11,14 +11,6 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#0a0a0f;color:#e8e8f0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;overflow:hidden}
-#pin-gate{position:fixed;inset:0;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:0}
-#pin-gate h1{font-size:1.4rem;letter-spacing:.25em;margin-bottom:2rem;opacity:.6}
-#pin-gate .form-group{display:flex;flex-direction:column;gap:12px;width:260px}
-#pin-gate input{background:#1a1a2e;border:1px solid #333;border-radius:12px;color:#e8e8f0;font-size:1rem;padding:.85rem 1.2rem;outline:none;width:100%;-webkit-appearance:none}
-#pin-gate input:focus{border-color:#4444cc}
-#pin-gate input::placeholder{color:#555}
-#pin-gate button{background:#3333cc;border:none;border-radius:12px;color:#fff;cursor:pointer;font-size:1rem;padding:.85rem;margin-top:4px;width:100%}
-#pin-gate .err{color:#ff4466;font-size:.85rem;margin-top:.5rem;min-height:1.2em;text-align:center}
 #fullscreen-btn{position:fixed;bottom:44px;right:8px;background:rgba(26,26,40,.85);border:1px solid #2a2a44;border-radius:8px;color:#888;cursor:pointer;font-size:.85rem;padding:5px 8px;z-index:100;backdrop-filter:blur(4px)}
 #shell{display:none;flex-direction:column;height:100%}
 #tabs-bar{display:flex;align-items:center;background:#111118;border-bottom:1px solid #1e1e30;overflow-x:auto;padding:4px 4px 0;gap:2px;scrollbar-width:none;min-height:40px}
@@ -56,16 +48,6 @@ html,body{height:100%;background:#0a0a0f;color:#e8e8f0;font-family:-apple-system
 </style>
 </head>
 <body>
-
-<div id="pin-gate">
-  <h1>XEN</h1>
-  <div class="form-group">
-    <input id="gate-name" type="text" placeholder="Your name" autocomplete="off" autocorrect="off" spellcheck="false">
-    <input id="gate-phone" type="tel" placeholder="Phone number" autocomplete="off">
-    <button onclick="submitGate()">Enter</button>
-  </div>
-  <div class="err" id="pin-err"></div>
-</div>
 
 <div id="shell">
   <div id="tabs-bar">
@@ -113,27 +95,13 @@ let session = { tabs: [], activeId: null, seq: 0 };
 let sse = null;
 let screenshotTimer = null;
 
-// ── Gate ──────────────────────────────────────────────────────────────────
-(function() {
-  var p = new URLSearchParams(location.search);
-  if (p.get('go') === 'GQ') { openShell(); return; }
-})();
-document.getElementById('gate-name').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('gate-phone').focus(); });
-document.getElementById('gate-phone').addEventListener('keydown', e => { if (e.key === 'Enter') submitGate(); });
-function submitGate() {
-  var name = document.getElementById('gate-name').value.trim();
-  var phone = document.getElementById('gate-phone').value.trim();
-  if (!name) { document.getElementById('pin-err').textContent = 'Enter your name'; return; }
-  if (!phone) { document.getElementById('pin-err').textContent = 'Enter your phone'; return; }
-  fetch(API + '/api/gate-entry', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, phone}) }).catch(()=>{});
-  openShell();
-}
+// No gate. C4 + noauth-mandatory — every user lands directly in the shell.
 function openShell() {
-  document.getElementById('pin-gate').style.display = 'none';
   document.getElementById('shell').style.display = 'flex';
   applyMode();
   connectSession();
 }
+openShell();
 
 // ── Mode toggle ───────────────────────────────────────────────────────────
 const modeBtn = document.getElementById('mode-btn');
