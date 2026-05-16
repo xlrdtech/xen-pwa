@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xen Unified Log</title>
+<style>
+  :root {
+    --bg: #0a0d09;
+    --bg-elev: #131814;
+    --fg: #d6e1da;
+    --fg-dim: #6e7a72;
+    --accent: #00dc82;
+    --voice: #b069f0;
+    --sms: #00dc82;
+    --beeper: #f0a060;
+    --steer: #ff6688;
+    --error: #ff5566;
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+  header { position: sticky; top: 0; background: var(--bg-elev); border-bottom: 1px solid var(--border); padding: 10px 14px; display: flex; align-items: center; gap: 12px; z-index: 10; }
+  header h1 { margin: 0; font-size: 14px; font-weight: 500; letter-spacing: 0.04em; }
+  header .status { color: var(--fg-dim); font-size: 11px; }
+  header .status.connected { color: var(--accent); }
+  header input { background: transparent; color: var(--fg); border: 1px solid var(--border); padding: 5px 9px; border-radius: 6px; font: inherit; width: 220px; }
+  header select { background: var(--bg-elev); color: var(--fg); border: 1px solid var(--border); padding: 5px 9px; border-radius: 6px; font: inherit; }
+  header button { background: rgba(0,220,130,0.10); color: var(--accent); border: 1px solid rgba(0,220,130,0.40); padding: 5px 10px; border-radius: 6px; font: inherit; cursor: pointer; }
+  header button:hover { background: rgba(0,220,130,0.16); }
+  #log { padding: 8px 12px; }
+  .row { display: grid; grid-template-columns: 84px 80px 80px 1fr; gap: 10px; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.04); align-items: baseline; }
+  .row:hover { background: rgba(255,255,255,0.025); }
+  .ts { color: var(--fg-dim); font-size: 11px; }
+  .channel { font-weight: 500; text-transform: lowercase; }
+  .channel.voice  { color: var(--voice); }
+  .channel.sms    { color: var(--sms); }
+  .channel.beeper { color: var(--beeper); }
+  .channel.steer  { color: var(--steer); }
+  .role { color: var(--fg-dim); font-size: 11px; }
+  .text { color: var(--fg); white-space: pre-wrap; word-break: break-word; }
+  .meta-tag { color: var(--fg-dim); font-size: 10px; padding: 0 4px; }
+  .empty { padding: 40px; text-align: center; color: var(--fg-dim); }
+  .footer { position: sticky; bottom: 0; background: var(--bg-elev); border-top: 1px solid var(--border); padding: 6px 14px; color: var(--fg-dim); font-size: 11px; display: flex; justify-content: space-between; }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 10px; background: rgba(255,255,255,0.06); color: var(--fg-dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1>XEN UNIFIED LOG</h1>
+  <span class="status" id="status">connecting…</span>
+  <input id="filter" placeholder="filter: text or +phone" />
+  <select id="channelFilter">
+    <option value="">all channels</option>
+    <option value="voice">voice</option>
+    <option value="sms">sms</option>
+    <option value="beeper">beeper</option>
+    <option value="steer">steer</option>
+  </select>
+  <button id="clear">clear</button>
+  <button id="pause">pause</button>
+  <button id="autoscroll" data-on="1">scroll: on</button>
+</header>
+<main id="log"><div class="empty">waiting for events…</div></main>
+<div class="footer">
+  <span><span class="pill">SSE</span> <span id="counter">0 events</span></span>
+  <span id="lastts">—</span>
+</div>
+<script>
+(function(){
+  'use strict';
+  var statusEl = document.getElementById('status');
+  var logEl = document.getElementById('log');
+  var counterEl = document.getElementById('counter');
+  var lastTsEl = document.getElementById('lastts');
+  var filterEl = document.getElementById('filter');
+  var channelFilterEl = document.getElementById('channelFilter');
+  var clearBtn = document.getElementById('clear');
+  var pauseBtn = document.getElementById('pause');
+  var autoscrollBtn = document.getElementById('autoscroll');
+
+  var paused = false;
+  var autoScroll = true;
+  var queue = [];
+  var count = 0;
+  var sseUrl = '/api/unified-log/stream?backfill=200';
+
+  function fmtTime(iso){
+    if(!iso) return '';
+    var d = new Date(iso);
+    if(isNaN(d.getTime())) return iso;
+    var h = String(d.getHours()).padStart(2,'0');
+    var m = String(d.getMinutes()).padStart(2,'0');
+    var s = String(d.getSeconds()).padStart(2,'0');
+    return h+':'+m+':'+s;
+  }
+
+  function classify(rec){
+    var p = rec && rec.payload || rec || {};
+    var ch = (p.channel || rec.channel || '').toLowerCase();
+    var role = p.role || rec.role || '';
+    var text = p.text || rec.text || '';
+    if(/^\[OPERATOR STEER/i.test(text) || /steer/i.test(ch)) ch = 'steer';
+    return { channel: ch || 'event', role: role, text: text, ts: p.ts || rec.ts, phone: p.phoneNumber || rec.phoneNumber || '', source: p.source || rec.source || '' };
+  }
+
+  function passesFilter(c){
+    var q = filterEl.value.trim().toLowerCase();
+    var cf = channelFilterEl.value;
+    if(cf && c.channel !== cf) return false;
+    if(!q) return true;
+    return (
+      (c.text||'').toLowerCase().includes(q) ||
+      (c.phone||'').toLowerCase().includes(q) ||
+      (c.role||'').toLowerCase().includes(q) ||
+      (c.source||'').toLowerCase().includes(q)
+    );
+  }
+
+  function render(rec){
+    var c = classify(rec);
+    if(!passesFilter(c)) return;
+    var row = document.createElement('div');
+    row.className = 'row';
+    var ts = document.createElement('span'); ts.className = 'ts'; ts.textContent = fmtTime(c.ts);
+    var channel = document.createElement('span'); channel.className = 'channel ' + c.channel; channel.textContent = c.channel || '·';
+    var role = document.createElement('span'); role.className = 'role'; role.textContent = (c.role || '') + (c.phone ? ' '+c.phone : '');
+    var text = document.createElement('span'); text.className = 'text'; text.textContent = c.text || '';
+    row.appendChild(ts); row.appendChild(channel); row.appendChild(role); row.appendChild(text);
+    if(logEl.firstElementChild && logEl.firstElementChild.classList.contains('empty')) logEl.innerHTML = '';
+    logEl.appendChild(row);
+    count++; counterEl.textContent = count + ' events';
+    lastTsEl.textContent = c.ts ? fmtTime(c.ts) : '';
+    while(logEl.children.length > 2000) logEl.removeChild(logEl.firstElementChild);
+    if(autoScroll && !paused) window.scrollTo(0, document.body.scrollHeight);
+  }
+
+  function connect(){
+    statusEl.textContent = 'connecting…'; statusEl.classList.remove('connected');
+    var es = new EventSource(sseUrl);
+    es.onopen = function(){ statusEl.textContent = 'live'; statusEl.classList.add('connected'); };
+    es.onerror = function(){ statusEl.textContent = 'reconnecting…'; statusEl.classList.remove('connected'); };
+    es.onmessage = function(ev){
+      if(paused) return;
+      var rec;
+      try { rec = JSON.parse(ev.data); } catch(e){ return; }
+      render(rec);
+    };
+  }
+
+  filterEl.addEventListener('input', function(){
+    // Re-render existing? simpler: future events filter; rely on existing rows visually staying.
+    // For consistency, just clear and rely on backfill on next connect (skip for simplicity).
+  });
+  channelFilterEl.addEventListener('change', filterEl.dispatchEvent.bind(filterEl, new Event('input')));
+  clearBtn.addEventListener('click', function(){ logEl.innerHTML = '<div class="empty">cleared.</div>'; count = 0; counterEl.textContent = '0 events'; });
+  pauseBtn.addEventListener('click', function(){ paused = !paused; pauseBtn.textContent = paused ? 'resume' : 'pause'; });
+  autoscrollBtn.addEventListener('click', function(){ autoScroll = !autoScroll; autoscrollBtn.textContent = 'scroll: ' + (autoScroll ? 'on' : 'off'); });
+
+  connect();
+})();
+</script>
+</body>
+</html>

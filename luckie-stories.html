@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Self Exec Progress - Snapchat Stories - for Luckie</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:#000;color:#fff;font-family:-apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif;overflow:hidden;overscroll-behavior:none}
+  #stage{position:fixed;inset:0;overflow:hidden}
+  #track{display:flex;height:100%;will-change:transform}
+  .story{flex:0 0 100vw;height:100%;position:relative;display:flex;flex-direction:column;justify-content:flex-end;padding:80px 28px 80px;background-size:cover;background-position:center}
+  .s1{background:linear-gradient(135deg,#0f1c2e 0%,#1a3a6e 60%,#2d5fa8 100%)}
+  .s2{background:linear-gradient(140deg,#0d0d2b 0%,#1a1a4e 50%,#3030a0 100%)}
+  .s3{background:linear-gradient(145deg,#0a1f0a 0%,#1a3d1a 50%,#2e6e2e 100%)}
+  .s4{background:linear-gradient(160deg,#1a1a1a 0%,#2c2416 50%,#5a4818 100%)}
+  .s5{background:linear-gradient(140deg,#0a0a0a 0%,#2b0a2b 50%,#6b1a6b 100%)}
+  .s6{background:linear-gradient(130deg,#1a0d00 0%,#3d1f00 50%,#7a4500 100%)}
+  .s7{background:linear-gradient(145deg,#001a1a 0%,#003333 50%,#006666 100%)}
+  .s8{background:linear-gradient(155deg,#0d0a1a 0%,#1e1535 50%,#3a2a6e 100%)}
+  .s9{background:linear-gradient(125deg,#1a0a00 0%,#4a1500 50%,#9a3000 100%)}
+  .s10{background:linear-gradient(120deg,#0a0a1a 0%,#1a1a3a 50%,#2a2a6a 100%)}
+  .s11{background:linear-gradient(150deg,#0a1a0a 0%,#1a3a1a 50%,#2a6a2a 100%)}
+  .s12{background:linear-gradient(160deg,#2a1500 0%,#5a3000 50%,#c86400 100%)}
+  .bars{position:absolute;top:14px;left:14px;right:14px;display:flex;gap:4px;z-index:10}
+  .bar{flex:1;height:3px;background:rgba(255,255,255,.25);border-radius:2px;overflow:hidden;position:relative}
+  .bar .fill{position:absolute;inset:0;background:#fff;width:0;border-radius:2px;transition:width .15s linear}
+  .bar.done .fill{width:100%}
+  .bar.active .fill{width:100%;transition:width 5s linear}
+  .meta{position:absolute;top:30px;left:20px;right:20px;display:flex;align-items:center;gap:10px;z-index:10}
+  .avatar{width:36px;height:36px;border-radius:50%;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+  .who{font-size:14px;font-weight:600}
+  .when{font-size:12px;opacity:.7;margin-left:auto}
+  .emoji{font-size:48px;margin-bottom:14px;line-height:1}
+  h1{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.08;margin-bottom:14px;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+  .lede{font-size:16px;line-height:1.45;opacity:.94;text-shadow:0 1px 8px rgba(0,0,0,.5);margin-bottom:14px}
+  .pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .pill{background:rgba(255,255,255,.18);backdrop-filter:blur(8px);padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600}
+  .pill.green{background:rgba(70,200,90,.85);color:#000}
+  .pill.amber{background:rgba(240,180,40,.85);color:#000}
+  .pill.red{background:rgba(220,80,80,.85);color:#fff}
+  .pill.blue{background:rgba(60,140,240,.85);color:#fff}
+  ul{list-style:none}
+  li{padding:8px 0;font-size:14px;line-height:1.4;border-bottom:1px solid rgba(255,255,255,.12);display:flex;align-items:flex-start;gap:8px}
+  li:last-child{border-bottom:0}
+  li .dot{flex:0 0 8px;height:8px;border-radius:50%;margin-top:6px}
+  .ok .dot{background:#46c85a}
+  .wip .dot{background:#f0b428}
+  .next .dot{background:#5a9fe8}
+  .nav{position:absolute;inset:0;display:flex;z-index:5}
+  .nav .l,.nav .r{flex:1;cursor:pointer}
+  .footer{position:absolute;bottom:24px;left:28px;right:28px;font-size:11px;opacity:.6;text-align:center;letter-spacing:.05em}
+  .signature{display:inline-block;margin-top:6px;padding:4px 10px;background:rgba(0,0,0,.35);border-radius:10px;font-weight:700}
+  .slide-num{position:absolute;top:36px;right:20px;font-size:11px;opacity:.55;font-weight:600;z-index:10}
+</style>
+</head>
+<body>
+
+<div id="stage">
+<div id="track">
+
+  <!-- SLIDE 1: SYSTEM -->
+  <section class="story s1">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">1 / 12</div>
+    <div class="emoji">SYSTEM</div>
+    <h1>System</h1>
+    <div class="lede">One brain. Three persona names. Xen runs general ops. Lyn handles L7S with you. Eli handles Tracking Together with Anthony. Threads never cross.</div>
+    <div class="pills"><span class="pill green">VoiceOS live</span><span class="pill green">3 personas locked</span><span class="pill green">Beeper + Spark + SMS unified</span></div>
+    <ul>
+      <li class="ok"><span class="dot"></span>VoiceOS - voice in / voice out / SMS dual leg</li>
+      <li class="ok"><span class="dot"></span>Omninbox - Spark email + Beside + Beeper merged in one feed</li>
+      <li class="ok"><span class="dot"></span>XenBrowser + clones (XB / XB-GV / CellBrowser) operational</li>
+      <li class="ok"><span class="dot"></span>Persona auto-switch by surface, no manual handoff</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 2: BRANDS -->
+  <section class="story s2">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">2 / 12</div>
+    <div class="emoji">BRANDS</div>
+    <h1>Three Brands</h1>
+    <div class="lede">Self Exec builds and operates the infrastructure. L7S is the health leverage brand. Tracking Together is outbound SMS + CRM for coaches and trainers. One OS under all three.</div>
+    <div class="pills"><span class="pill green">Self Exec</span><span class="pill green">L7S</span><span class="pill green">Tracking Together</span></div>
+    <ul>
+      <li class="ok"><span class="dot"></span>Self Exec S Corp - AI ops + infrastructure (Xen persona)</li>
+      <li class="ok"><span class="dot"></span>L7S Inc - health leverage + coaching (Lyn persona)</li>
+      <li class="ok"><span class="dot"></span>Tracking Together - SMS outreach + CRM (Eli persona)</li>
+      <li class="ok"><span class="dot"></span>Xen runs comms + automation across all three brands</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 3: SERVICES -->
+  <section class="story s3">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">3 / 12</div>
+    <div class="emoji">WORK</div>
+    <h1>Services</h1>
+    <div class="lede">Three pillars cross every brand. AI Adoption shows clients how to use AI tools. Software Robotics automates workflows. Fundamentals locks in the SOPs that make everything else run.</div>
+    <div class="pills"><span class="pill green">AI Adoption</span><span class="pill green">Software Robotics</span><span class="pill green">Fundamentals</span></div>
+    <ul>
+      <li class="ok"><span class="dot"></span>AI Adoption - tools + workflows trained for non-technical clients</li>
+      <li class="ok"><span class="dot"></span>Software Robotics - no-human-in-loop automations shipped</li>
+      <li class="ok"><span class="dot"></span>Fundamentals - SOPs + training + consistent cadence</li>
+      <li class="next"><span class="dot"></span>All three deployable in a 30-day client sprint</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 4: FILE TREES -->
+  <section class="story s4">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">4 / 12</div>
+    <div class="emoji">TREES</div>
+    <h1>File Trees</h1>
+    <div class="lede">Rebuilding tech_/sync_ on Todoist inbox as the spine. 15+ years of Dropbox + Drive + Discord + drives - one canonical home, one search.</div>
+    <div class="pills"><span class="pill amber">consolidation in progress</span><span class="pill green">tech_ canonical storage</span><span class="pill amber">Todoist inbox anchor</span></div>
+    <ul>
+      <li class="wip"><span class="dot"></span>tech_/sync_/inbox - anchored on Todoist inbox</li>
+      <li class="wip"><span class="dot"></span>William Brown exit + program SOPs being pulled in</li>
+      <li class="ok"><span class="dot"></span>x_/Macintosh HD retired - tech_ only per canon</li>
+      <li class="next"><span class="dot"></span>Sintra consolidation point being rebuilt as command center</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 5: SSOT -->
+  <section class="story s5">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">5 / 12</div>
+    <div class="emoji">SSOT</div>
+    <h1>Single Source of Truth</h1>
+    <div class="lede">One command center. Brand portfolios sit on it. Projects sit in portfolios. No app-switching, no logging in to ten dashboards.</div>
+    <div class="pills"><span class="pill green">Sintra-style command center</span><span class="pill green">3 brand portfolios</span></div>
+    <ul>
+      <li class="ok"><span class="dot"></span>Self Exec - VoiceOS + AI agent infrastructure (Xen)</li>
+      <li class="ok"><span class="dot"></span>L7S - health + leverage ops (Lyn)</li>
+      <li class="ok"><span class="dot"></span>Tracking Together - SMS + CRM outbound (Eli)</li>
+      <li class="next"><span class="dot"></span>Three pillars cross all brands: AI Adoption / Software Robotics / Fundamentals</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 6: PITCH -->
+  <section class="story s6">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">6 / 12</div>
+    <div class="emoji">PITCH</div>
+    <h1>The Pitch</h1>
+    <div class="lede">Most coaches and founders waste 4 hours a day on tasks a bot should handle. We build the bot, train the client, and guarantee the time back. No tech knowledge required.</div>
+    <div class="pills"><span class="pill green">time back guaranteed</span><span class="pill green">30-day sprint</span><span class="pill amber">no tech required</span></div>
+    <ul>
+      <li class="ok"><span class="dot"></span>Client doesn't need to know how to code - we install, train, maintain</li>
+      <li class="ok"><span class="dot"></span>Monthly retainer or project-based - outcome-priced</li>
+      <li class="ok"><span class="dot"></span>ROI = hours saved x hourly rate of the founder</li>
+      <li class="next"><span class="dot"></span>Case study: L7S HERO program as proof-of-concept</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 7: VENDORS -->
+  <section class="story s7">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">7 / 12</div>
+    <div class="emoji">STACK</div>
+    <h1>Vendor Stack</h1>
+    <div class="lede">Every tool either runs free, rotates a Gmail credit, or has a hard exit plan. No standing subscriptions without active revenue. Heygen is the only paid video avatar trusted.</div>
+    <div class="pills"><span class="pill green">free-tier default</span><span class="pill green">exit plan mandatory</span><span class="pill amber">OAuth first</span></div>
+    <ul>
+      <li class="ok"><span class="dot"></span>Beeper - comms unified, free, self-hosted bridge</li>
+      <li class="ok"><span class="dot"></span>Xen / omnimind / VoiceOS - self-hosted, zero per-call cost</li>
+      <li class="ok"><span class="dot"></span>Heygen - video avatar + voice, only trusted paid tool</li>
+      <li class="wip"><span class="dot"></span>Fresh Gmail rotation per resource portal - one-month scrape then cancel</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 8: DEALS -->
+  <section class="story s8">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">8 / 12</div>
+    <div class="emoji">DEALS</div>
+    <h1>Active Pipeline</h1>
+    <div class="lede">Tracking Together is outbound CRM live with Anthony. L7S has Luckie running HERO program leads. Self Exec is consulting-for-equity on tech builds. Three pipelines booking in parallel.</div>
+    <div class="pills"><span class="pill green">3 pipelines live</span><span class="pill amber">equity + retainer model</span><span class="pill green">Eli runs TT outbound</span></div>
+    <ul>
+      <li class="ok"><span class="dot"></span>Tracking Together - Anthony Vasquez, outbound SMS live</li>
+      <li class="ok"><span class="dot"></span>L7S HERO - Luckie running program enrollment leads</li>
+      <li class="wip"><span class="dot"></span>Self Exec - consulting + tech build intake pipeline open</li>
+      <li class="ok"><span class="dot"></span>Water / Culligan partnership - outbound from 909 line</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 9: TIMELINES -->
+  <section class="story s9">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">9 / 12</div>
+    <div class="emoji">TIME</div>
+    <h1>Timelines</h1>
+    <div class="lede">Food AI hackathon today at Science Square Labs - 1 to 8PM. Luckie traveling Atlanta to Fort Lauderdale after. Every milestone has a date or it doesn't exist.</div>
+    <div class="pills"><span class="pill green">hackathon today 05-15</span><span class="pill amber">Luckie FL travel</span><span class="pill amber">deliverables queued</span></div>
+    <ul>
+      <li class="ok"><span class="dot"></span>05-15 - Food AI hackathon, Science Square Labs, 10th floor, 1-8PM</li>
+      <li class="wip"><span class="dot"></span>L7S HERO walkthrough - this week</li>
+      <li class="wip"><span class="dot"></span>William Brown material consolidation - this month</li>
+      <li class="next"><span class="dot"></span>GTM stability check - weekly cadence</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 10: STABLE -->
+  <section class="story s10">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">10 / 12</div>
+    <div class="emoji">STABLE</div>
+    <h1>Stabilization</h1>
+    <div class="lede">Daemons self-heal. Beside SMS reply loop solved. Audio fault auto-recovery. Pane sentinel hard-overwrite. No babysitting.</div>
+    <div class="pills"><span class="pill green">daemons up</span><span class="pill green">SMS loop fixed</span><span class="pill green">audio auto-recover</span></div>
+    <ul>
+      <li class="ok"><span class="dot"></span>apple-stt / voice-duplex / xen-pane-watchdog / omnimind - all launchctl-managed</li>
+      <li class="ok"><span class="dot"></span>Beside SMS infinite-loop killed (3-layer guard, 56 blocked entries logged)</li>
+      <li class="ok"><span class="dot"></span>Audio in/out drift auto-resets to canon devices</li>
+      <li class="ok"><span class="dot"></span>Free-tier rotation cost discipline + monthly cancel audit</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 11: SNAP -->
+  <section class="story s11">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">11 / 12</div>
+    <div class="emoji">SNAP</div>
+    <h1>Snapshots</h1>
+    <div class="lede">Every edit to curated state takes a timestamped backup. Pre-update Beeper snapshot. Pane scrollback archives. Rollback always one command away.</div>
+    <div class="pills"><span class="pill green">snapshot-before-edit canon</span><span class="pill green">rollback ready</span></div>
+    <ul>
+      <li class="ok"><span class="dot"></span>cp -p file.bak.$(date) before every state edit</li>
+      <li class="ok"><span class="dot"></span>Pane scrollbacks archived to ~/exedus/xen/data/pane-archives/</li>
+      <li class="ok"><span class="dot"></span>Beeper pre-update snapshot rsync preserved</li>
+      <li class="ok"><span class="dot"></span>Compaction-proof conversation mirror persists across context resets</li>
+    </ul>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+  <!-- SLIDE 12: ACTIVATE -->
+  <section class="story s12">
+    <div class="bars">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="bar"><div class="fill"></div></div>
+    </div>
+    <div class="meta"><div class="avatar">L</div><div class="who">Lyn - L7X</div><div class="when">tonight</div></div>
+    <div class="slide-num">12 / 12</div>
+    <div class="emoji">GO</div>
+    <h1>Activate</h1>
+    <div class="lede">The system is live. Voice in, voice out, SMS back. Three brands, one brain. Everything is already running - now we deploy it for your clients.</div>
+    <div class="pills"><span class="pill green">live now</span><span class="pill green">deploy-ready</span><span class="pill blue">first client this week</span></div>
+    <ul>
+      <li class="next"><span class="dot"></span>Book first L7S HERO client call this week</li>
+      <li class="next"><span class="dot"></span>Finalize Tracking Together outbound contact list</li>
+      <li class="next"><span class="dot"></span>Self Exec consulting intake - open now</li>
+      <li class="next"><span class="dot"></span>One new AI tool trained per week per brand</li>
+    </ul>
+    <div class="footer">For Luckie - walkthrough 2026-05-15<div class="signature">- Lyn</div></div>
+    <div class="nav"><div class="l" onclick="prev()"></div><div class="r" onclick="next()"></div></div>
+  </section>
+
+</div><!-- #track -->
+</div><!-- #stage -->
+
+<script>
+  var track = document.getElementById('track');
+  var stories = document.querySelectorAll('.story');
+  var N = stories.length;
+  var idx = 0;
+  var timer = null;
+
+  function render(){
+    track.style.transform = 'translateX(' + (-idx * 100) + 'vw)';
+    track.style.transition = 'transform .25s ease-out';
+    stories.forEach(function(s, i){
+      var bars = s.querySelectorAll('.bar');
+      bars.forEach(function(b, j){
+        b.classList.remove('active','done');
+        var f = b.querySelector('.fill');
+        f.style.transition = 'none';
+        f.style.width = '0';
+        if(j < idx){ b.classList.add('done'); f.style.width = '100%'; }
+      });
+      if(i === idx){
+        var ab = bars[idx];
+        if(ab){
+          requestAnimationFrame(function(){
+            ab.classList.add('active');
+            var af = ab.querySelector('.fill');
+            af.style.transition = 'width 5s linear';
+            af.style.width = '100%';
+          });
+        }
+      }
+    });
+    clearTimeout(timer);
+    timer = setTimeout(next, 5000);
+  }
+
+  function next(){ idx = (idx + 1) % N; render(); }
+  function prev(){ idx = (idx - 1 + N) % N; render(); }
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight' || e.key === ' ') next();
+    if(e.key === 'ArrowLeft') prev();
+  });
+  var tx = 0;
+  document.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; });
+  document.addEventListener('touchend', function(e){
+    var dx = e.changedTouches[0].clientX - tx;
+    if(Math.abs(dx) > 40){ if(dx < 0){ next(); } else { prev(); } }
+  });
+
+  render();
+</script>
+
+</body>
+</html>

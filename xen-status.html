@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XEN LIVE</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'JetBrains Mono',monospace,monospace;font-size:13px;padding:16px;min-height:100vh}
+h1{font-size:11px;letter-spacing:4px;color:#4ade80;text-transform:uppercase;margin-bottom:16px;border-bottom:1px solid #1e293b;padding-bottom:8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:#0f172a;border:1px solid #1e293b;border-radius:6px;padding:12px}
+.card h2{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#64748b;margin-bottom:10px}
+.thread{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #1e293b}
+.thread:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.thread-name{color:#a78bfa;font-size:12px;font-weight:bold}
+.thread-id{color:#334155;font-size:10px}
+.thread-msg{color:#94a3b8;font-size:11px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thread-time{color:#475569;font-size:10px}
+.pill{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:bold}
+.pill.wa{background:#25d366;color:#000}
+.pill.matrix{background:#0dbd8b;color:#000}
+.pill.gv{background:#4285f4;color:#fff}
+.pill.ok{background:#22c55e;color:#000}
+.pill.warn{background:#f59e0b;color:#000}
+.pill.dead{background:#ef4444;color:#fff}
+.daemon-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #0f172a}
+.daemon-row:last-child{border-bottom:none}
+.daemon-name{color:#cbd5e1;font-size:11px}
+.action-row{padding:3px 0;border-bottom:1px solid #1e293b;font-size:11px}
+.action-row:last-child{border-bottom:none}
+.action-who{color:#f59e0b}
+.action-what{color:#94a3b8}
+.action-sent{color:#22c55e}
+.ts{color:#475569;font-size:10px}
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.insight{background:#0f172a;border-left:3px solid #a78bfa;padding:8px;border-radius:0 4px 4px 0;font-size:11px;color:#94a3b8;margin-top:4px}
+.insight-title{color:#a78bfa;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+#last-updated{color:#334155;font-size:10px;text-align:right;margin-top:12px}
+</style>
+</head>
+<body>
+<h1><span class="live-dot"></span>XEN LIVE — 2026-05-13</h1>
+
+<div class="grid">
+
+<div class="card">
+  <h2>Beeper Threads — Locked</h2>
+
+  <div class="thread" style="border-left:3px solid #ef4444;padding-left:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="thread-name">Luckie Goggins</span>
+      <span class="pill wa">WA</span>
+    </div>
+    <div class="thread-id">chatID: 32047 · !jBSeiq41IOaMFKqqvdMN · <span style="color:#ef4444">3 UNREAD</span></div>
+    <div class="thread-msg" style="color:#ef4444">15:30 — AI mixed up RevOps/FP&amp;A tasks: confused L7S HERO SOS hand-offs to BAG RLPP</div>
+    <div class="thread-msg" style="color:#64748b;font-size:10px">15:26 — IMAGE from Rafael@brightpathascendgroup.com (BAG) · local-only</div>
+    <div class="thread-msg" style="color:#64748b;font-size:10px">15:11 — "11:11"</div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px">
+      <span class="thread-time">Last xen reply: 11:56 PT</span>
+      <span style="color:#ef4444;font-size:10px">NEEDS LYN REPLY</span>
+    </div>
+  </div>
+
+  <div class="thread">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="thread-name">Note to Self (xlrd00)</span>
+      <span class="pill matrix">Matrix</span>
+    </div>
+    <div class="thread-id">chatID: 32040 · !ifOUYhzrYWiGxRyrLJ:beeper.com</div>
+    <div class="thread-msg">Haiku limit hit 23:54 PT — resets 8pm ET</div>
+    <div class="thread-msg" style="color:#64748b;font-size:10px">Earlier: Haiku team of 4 session · terminal logs available</div>
+    <div class="thread-time">23:54 PT</div>
+  </div>
+
+  <div class="thread">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="thread-name">+17709999934 (GV Beside 9934)</span>
+      <span class="pill gv">GV</span>
+    </div>
+    <div class="thread-id">chatID: 32114</div>
+    <div class="thread-msg">qi self-note: East Allen persona + VoiceOS stumble injection spec</div>
+    <div class="thread-time">18:45 PT</div>
+  </div>
+
+  <div class="thread" style="border-left:3px solid #f59e0b;padding-left:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="thread-name">+17707900135 (GV)</span>
+      <span class="pill gv">GV</span>
+    </div>
+    <div class="thread-id">chatID: 32131 · 770 area code (Georgia)</div>
+    <div class="thread-msg" style="color:#f59e0b">Missed voice call 22:32 PT — no voicemail, unknown caller, no prior messages</div>
+    <div style="display:flex;justify-content:space-between">
+      <span class="thread-time">22:32 PT</span>
+      <span style="color:#f59e0b;font-size:10px">ID UNKNOWN</span>
+    </div>
+  </div>
+
+  <div class="thread">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="thread-name">Sophie💛 + Maya💜 + Sofie M</span>
+      <span class="pill" style="background:#ec4899;color:#fff">STRING</span>
+    </div>
+    <div class="thread-id">Sophie: 31152/31111 (Twitter) + new String invite · Maya: 32202 + new String invite</div>
+    <div class="thread-msg" style="color:#f59e0b">⚠ String chat invitations — qi personal review required, no autonomous reply</div>
+    <div class="thread-time">22:17 PT tonight</div>
+  </div>
+
+  <div class="thread">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="thread-name">PROJECT H.E.R.O.</span>
+      <span class="pill wa">WA</span>
+    </div>
+    <div class="thread-id">L7S team · Haiku sent</div>
+    <div class="thread-msg action-sent">SENT: "all systems go"</div>
+    <div class="thread-time">via Haiku agent ~13:xx PT</div>
+  </div>
+</div>
+
+<div>
+  <div class="card" style="margin-bottom:12px">
+    <h2>Daemons</h2>
+    <div class="daemon-row">
+      <span class="daemon-name">apple-stt-v2</span>
+      <span class="pill ok">UP · PID 84792</span>
+    </div>
+    <div class="daemon-row">
+      <span class="daemon-name">omnimind-4441</span>
+      <span class="pill ok">UP · PID 64008</span>
+    </div>
+    <div class="daemon-row">
+      <span class="daemon-name">voice-duplex</span>
+      <span class="pill ok">UP · PID 968</span>
+    </div>
+    <div class="daemon-row">
+      <span class="daemon-name">beeper-mcp-proxy</span>
+      <span class="pill ok">UP :23374 · fixed</span>
+    </div>
+    <div class="daemon-row">
+      <span class="daemon-name">audio</span>
+      <span class="pill ok">out / in</span>
+    </div>
+    <div class="daemon-row">
+      <span class="daemon-name">pane</span>
+      <span class="pill ok">%0</span>
+    </div>
+    <div class="daemon-row">
+      <span class="daemon-name">Haiku limit</span>
+      <span class="pill warn">HIT — resets 8pm ET</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <h2>Haiku Session Actions — DO NOT RE-SEND</h2>
+    <div class="action-row">
+      <span class="action-who">Ray</span> → <span class="action-sent">"9pm works great for me! Lock it in."</span>
+      <div style="color:#4ade80;font-size:10px;margin-top:2px">Ray confirmed Thu 9pm qi / 6pm Ray · Discord · lock reply sent</div>
+      <div style="color:#f59e0b;font-size:10px">⚠ pre-call brief needed → /tmp/ray-prebrief-draft-2026-05-14.txt</div>
+    </div>
+    <div class="action-row">
+      <span class="action-who">PROJECT H.E.R.O.</span> → <span class="action-sent">"all systems go"</span>
+    </div>
+    <div class="action-row">
+      <span class="action-who">B.A.T.M.A.N.</span> → <span class="action-sent">"B.A.T.M.A.N. mode activated, lets build."</span>
+    </div>
+    <div class="action-row" style="color:#64748b">
+      Sophie / Chlo Lumilya — skipped (intimate)
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>VoiceOS Intel — Pending Greenlight</h2>
+    <div class="insight">
+      <div class="insight-title">Natural Stumble Injection</div>
+      macOS say <code>[[slnc N]]</code> markers · probabilistic p=0.12 · state machine rarity (1/4 sentences) · fillers: "uh,", "I mean,", "look," · East Allen archetype: Killah Priest + Bobby Hemmitt + Phil Valentine
+    </div>
+    <div style="color:#475569;font-size:10px;margin-top:6px">Spec: /tmp/voiceos-stumble-spec.md</div>
+  </div>
+</div>
+
+</div>
+
+<div id="last-updated">last updated: <span id="ts"></span></div>
+
+<script>
+function tick(){document.getElementById('ts').textContent=new Date().toLocaleTimeString()}
+tick();setInterval(tick,5000);
+</script>
+</body>
+</html>

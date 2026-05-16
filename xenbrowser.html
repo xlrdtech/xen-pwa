@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>XenBrowser</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bar: 52px;
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #2a2a2a;
+    --accent: #00ff88;
+    --text: #f0f0f0;
+    --muted: #666;
+  }
+  html, body { width: 100%; height: 100%; background: var(--bg); overflow: hidden; font-family: -apple-system, system-ui, sans-serif; }
+  #toolbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--bar);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 6px; padding: 0 8px;
+    z-index: 100;
+    padding-top: env(safe-area-inset-top);
+  }
+  #nav-back, #nav-fwd, #nav-reload {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: none; border: none; color: var(--text);
+    font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  #url-bar {
+    flex: 1; height: 36px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 13px; padding: 0 12px;
+    outline: none; min-width: 0;
+  }
+  #url-bar:focus { border-color: var(--accent); }
+  #viewport {
+    position: fixed; top: var(--bar); left: 0; right: 0; bottom: 44px;
+    background: #111; display: flex; align-items: center; justify-content: center;
+  }
+  #screen { width: 100%; height: 100%; object-fit: contain; display: block; cursor: crosshair; touch-action: none; }
+  #overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; color: var(--muted);
+  }
+  #overlay.hidden { display: none; }
+  .spinner {
+    width: 32px; height: 32px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
+  #status-dot.live { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  #tab-strip {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 44px; background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 8px; gap: 4px;
+    overflow-x: auto; padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab {
+    flex-shrink: 0; height: 32px; padding: 0 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 12px;
+    cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+    max-width: 140px; overflow: hidden;
+  }
+  .tab.active { border-color: var(--accent); color: var(--accent); }
+  #new-tab-btn {
+    flex-shrink: 0; width: 32px; height: 32px;
+    background: none; border: 1px dashed var(--border);
+    border-radius: 8px; color: var(--muted); font-size: 20px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <div id="status-dot"></div>
+  <button id="nav-back">&#8249;</button>
+  <button id="nav-fwd">&#8250;</button>
+  <input id="url-bar" type="url" placeholder="Search or enter URL"
+         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <button id="nav-reload">&#8635;</button>
+</div>
+
+<div id="viewport">
+  <img id="screen" alt="">
+  <div id="overlay">
+    <div class="spinner"></div>
+    <span>Connecting to XenBrowser</span>
+  </div>
+</div>
+
+<div id="tab-strip" id="tab-strip"></div>
+
+<script>
+(function() {
+  const WS_URL = 'wss://' + location.host + '/browser-ws';
+  const CMD_URL = '/browser-cmd';
+
+  let ws = null;
+  let tabs = [{ id: 1, title: 'New Tab', url: '' }];
+  let activeTab = 1;
+  let tabCounter = 1;
+
+  const screenEl = document.getElementById('screen');
+  const overlayEl = document.getElementById('overlay');
+  const urlBar = document.getElementById('url-bar');
+  const dot = document.getElementById('status-dot');
+  const tabStrip = document.getElementById('tab-strip');
+
+  // Navigation buttons
+  document.getElementById('nav-back').addEventListener('click', () => sendCmd({ action: 'back' }));
+  document.getElementById('nav-fwd').addEventListener('click', () => sendCmd({ action: 'forward' }));
+  document.getElementById('nav-reload').addEventListener('click', () => sendCmd({ action: 'reload' }));
+
+  urlBar.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    var url = urlBar.value.trim();
+    if (url.indexOf('://') === -1) url = 'https://' + url;
+    sendCmd({ action: 'navigate', url: url });
+    urlBar.blur();
+  });
+
+  screenEl.addEventListener('click', function(e) {
+    var rect = screenEl.getBoundingClientRect();
+    var x = (e.clientX - rect.left) / rect.width;
+    var y = (e.clientY - rect.top) / rect.height;
+    sendCmd({ action: 'click_xy', x: x, y: y });
+  });
+
+  function sendCmd(cmd) {
+    cmd.tab = activeTab;
+    fetch(CMD_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cmd)
+    }).catch(function() {});
+  }
+
+  function renderTabs() {
+    while (tabStrip.firstChild) tabStrip.removeChild(tabStrip.firstChild);
+    tabs.forEach(function(tab) {
+      var btn = document.createElement('button');
+      btn.className = 'tab' + (tab.id === activeTab ? ' active' : '');
+
+      var label = document.createElement('span');
+      label.textContent = tab.title;
+      btn.appendChild(label);
+
+      if (tabs.length > 1) {
+        var closeBtn = document.createElement('span');
+        closeBtn.textContent = '×';
+        closeBtn.style.marginLeft = 'auto';
+        closeBtn.style.opacity = '0.5';
+        closeBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          closeTab(tab.id);
+        });
+        btn.appendChild(closeBtn);
+      }
+
+      btn.addEventListener('click', function() { switchTab(tab.id); });
+      tabStrip.appendChild(btn);
+    });
+
+    var addBtn = document.createElement('button');
+    addBtn.id = 'new-tab-btn';
+    addBtn.textContent = '+';
+    addBtn.addEventListener('click', newTab);
+    tabStrip.appendChild(addBtn);
+  }
+
+  function newTab() {
+    tabCounter++;
+    tabs.push({ id: tabCounter, title: 'New Tab', url: '' });
+    switchTab(tabCounter);
+    sendCmd({ action: 'new_tab', tab: tabCounter });
+  }
+
+  function switchTab(id) {
+    activeTab = id;
+    sendCmd({ action: 'switch_tab', tab: id });
+    renderTabs();
+  }
+
+  function closeTab(id) {
+    if (tabs.length === 1) return;
+    tabs = tabs.filter(function(t) { return t.id !== id; });
+    if (activeTab === id) switchTab(tabs[tabs.length - 1].id);
+    else renderTabs();
+    sendCmd({ action: 'close_tab', tab: id });
+  }
+
+  function connect() {
+    ws = new WebSocket(WS_URL);
+    ws.binaryType = 'arraybuffer';
+    ws.onopen = function() {
+      dot.classList.add('live');
+      overlayEl.classList.add('hidden');
+    };
+    ws.onmessage = function(e) {
+      if (e.data instanceof ArrayBuffer) {
+        var blob = new Blob([e.data], { type: 'image/jpeg' });
+        var url = URL.createObjectURL(blob);
+        var old = screenEl.src;
+        screenEl.src = url;
+        if (old) URL.revokeObjectURL(old);
+      } else {
+        try {
+          var msg = JSON.parse(e.data);
+          if (msg.url) urlBar.value = msg.url;
+          if (msg.title) {
+            var tab = tabs.find(function(t) { return t.id === activeTab; });
+            if (tab) { tab.title = msg.title.slice(0, 20); renderTabs(); }
+          }
+        } catch(ex) {}
+      }
+    };
+    ws.onclose = function() {
+      dot.classList.remove('live');
+      overlayEl.classList.remove('hidden');
+      setTimeout(connect, 2000);
+    };
+    ws.onerror = function() { ws.close(); };
+  }
+
+  renderTabs();
+  connect();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>XP &mdash; The Voice-First OS</title>
+  <meta name="description" content="One screen for every conversation across every network. Voice-controlled. Real-time. Three identities, infinite tenants.">
+  <meta name="theme-color" content="#0a0d09">
+  <meta property="og:title" content="XP &mdash; The Voice-First OS">
+  <meta property="og:description" content="Slack + Beeper + iMessage + HubSpot + ChatGPT &mdash; voice-controlled, on one screen.">
+  <meta property="og:url" content="https://xen.xlrd.org/landing.html">
+  <meta property="og:image" content="https://xen.xlrd.org/og-image.png">
+  <style>
+    :root{
+      --bg:#0a0d09; --panel:#0f1411; --card:#131814;
+      --fg:#e5ede9; --dim:#7a8780; --accent:#00dc82; --pop:#3FA9F5; --warm:#F6AD55;
+      --bd:rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,SF Pro Text,system-ui,Segoe UI,Inter,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .container{max-width:1100px;margin:0 auto;padding:0 24px}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:24px 24px;border-bottom:1px solid var(--bd)}
+    .nav .brand{font-weight:700;font-size:18px;letter-spacing:-.01em}
+    .nav .brand span{color:var(--accent)}
+    .nav .links a{margin-left:24px;font-size:14px;color:var(--dim)}
+    .nav .links a:hover{color:var(--fg)}
+    .hero{padding:80px 24px 100px;text-align:center;background:radial-gradient(circle at 50% 30%, rgba(0,220,130,.08) 0%, transparent 60%)}
+    .hero h1{font-size:clamp(40px,7vw,84px);font-weight:700;letter-spacing:-.02em;line-height:1.05;max-width:14ch;margin:0 auto 24px}
+    .hero h1 .accent{color:var(--accent)}
+    .hero .subhead{font-size:clamp(18px,2.5vw,22px);color:var(--dim);max-width:52ch;margin:0 auto 40px;line-height:1.45}
+    .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+    .btn{display:inline-block;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;border:1px solid transparent;transition:transform .12s,opacity .12s}
+    .btn:hover{transform:translateY(-1px);text-decoration:none}
+    .btn-primary{background:var(--accent);color:#0a0d09}
+    .btn-primary:hover{opacity:.92}
+    .btn-secondary{background:transparent;color:var(--fg);border-color:var(--bd)}
+    .btn-secondary:hover{border-color:rgba(255,255,255,.2)}
+
+    .strip{background:var(--panel);padding:14px 0;border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);text-align:center;font-size:13px;color:var(--dim)}
+    .strip .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:middle;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,220,130,.6)}50%{box-shadow:0 0 0 6px rgba(0,220,130,0)}}
+
+    .section{padding:90px 24px}
+    .section h2{font-size:clamp(28px,4vw,42px);font-weight:700;letter-spacing:-.015em;margin-bottom:16px;text-align:center}
+    .section .lede{font-size:18px;color:var(--dim);max-width:60ch;margin:0 auto 56px;text-align:center;line-height:1.5}
+
+    .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+    .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:28px}
+    .card .icon{font-size:24px;margin-bottom:12px}
+    .card h3{font-size:18px;font-weight:600;margin-bottom:10px}
+    .card p{font-size:14px;color:var(--dim);line-height:1.55}
+
+    .demo-frame{margin:60px auto 0;max-width:1000px;border:1px solid var(--bd);border-radius:14px;overflow:hidden;background:var(--card);box-shadow:0 10px 60px rgba(0,220,130,.06)}
+    .demo-frame .demo-bar{display:flex;gap:6px;padding:12px 14px;background:var(--panel);border-bottom:1px solid var(--bd);align-items:center}
+    .demo-frame .demo-bar .dot{width:10px;height:10px;border-radius:50%}
+    .demo-frame .demo-bar .dot.r{background:#ff5f57}
+    .demo-frame .demo-bar .dot.y{background:#febc2e}
+    .demo-frame .demo-bar .dot.g{background:#28c840}
+    .demo-frame .demo-bar .url{margin-left:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--dim)}
+    .demo-frame iframe{width:100%;height:560px;border:0;background:var(--bg);display:block}
+
+    .pillars{padding:90px 24px;background:var(--panel)}
+    .pillar-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;max-width:1100px;margin:0 auto}
+    .pillar{padding:24px}
+    .pillar .num{font-family:ui-monospace,monospace;color:var(--accent);font-size:13px;letter-spacing:.05em;margin-bottom:8px}
+    .pillar h3{font-size:20px;margin-bottom:10px;font-weight:600}
+    .pillar p{font-size:14px;color:var(--dim);line-height:1.55}
+
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;max-width:900px;margin:0 auto}
+    .stat{text-align:center;padding:20px}
+    .stat .n{font-size:42px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1}
+    .stat .l{font-size:13px;color:var(--dim);margin-top:8px;text-transform:uppercase;letter-spacing:.05em}
+
+    .cta-block{margin:80px 24px;padding:60px 24px;background:var(--panel);border-radius:16px;border:1px solid var(--bd);text-align:center;max-width:900px;margin-left:auto;margin-right:auto}
+    .cta-block h2{font-size:32px;margin-bottom:14px}
+    .cta-block p{font-size:16px;color:var(--dim);margin-bottom:32px;max-width:50ch;margin-left:auto;margin-right:auto}
+
+    .footer{padding:40px 24px 80px;text-align:center;color:var(--dim);font-size:13px;border-top:1px solid var(--bd)}
+    .footer .links a{margin:0 12px}
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand"><span>XP</span> &mdash; VoiceOS</div>
+  <div class="links">
+    <a href="#how">How it works</a>
+    <a href="#xp">Open XP</a>
+    <a href="#stats">Why now</a>
+    <a href="https://xen.xlrd.org/" class="btn btn-primary" style="padding:8px 18px">Open XP &rarr;</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <h1>One screen for every <span class="accent">conversation</span> &mdash; voice controlled.</h1>
+  <p class="subhead">Slack + Beeper + iMessage + HubSpot + ChatGPT, unified. Voice in, voice out, agentic action across every thread on every network. No more app-switching. No more lost context. No more typing replies you should be saying.</p>
+  <div class="cta-row">
+    <a href="https://xen.xlrd.org/" class="btn btn-primary">Open the live</a>
+    <a href="#how" class="btn btn-secondary">How it works</a>
+  </div>
+</section>
+
+<div class="strip"><span class="live-dot"></span>Running live on this server &mdash; <span id="thread-count">273</span> threads merged across Beeper, Spark, and Beside right now.</div>
+
+<section class="section" id="how">
+  <h2>Three panels. One brain.</h2>
+  <p class="lede">XP is what an OS looks like when voice is the primary input. Everything else &mdash; chat windows, CRM screens, browser tabs &mdash; gets pulled into one place.</p>
+  <div class="grid-3">
+    <div class="card">
+      <div class="icon">📥</div>
+      <h3>Omni-Inbox (left)</h3>
+      <p>Beside calls + SMS, Spark email across every account, Beeper for every chat network &mdash; merged into a single threaded list. One row per human. Cross-network unification you can&rsquo;t buy anywhere else.</p>
+    </div>
+    <div class="card">
+      <div class="icon">💬</div>
+      <h3>Thread &amp; App Drawer (middle)</h3>
+      <p>Click any thread to read and reply with persona-aware signing. Paste any URL into the reply box and it becomes a first-class XP app you can voice-drive. iOS Springboard, but for conversation.</p>
+    </div>
+    <div class="card">
+      <div class="icon">📞</div>
+      <h3>CRM &amp; Dialer (right)</h3>
+      <p>Every contact you&rsquo;ve ever talked to. Click to dial. Click to SMS. Notes, status, last contact. Conversation insight on the left, action on the right. Closed loop.</p>
+    </div>
+  </div>
+
+  <div class="demo-frame" id="xp">
+    <div class="demo-bar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="url">https://xen.xlrd.org/</span>
+    </div>
+    <iframe src="/" loading="lazy" title="XP live"></iframe>
+  </div>
+</section>
+
+<section class="pillars">
+  <div class="container">
+    <h2 style="text-align:center;margin-bottom:14px">Why XP wins</h2>
+    <p class="lede">Beeper gives you cross-network chat. Spark gives you email. HubSpot gives you a CRM. None of them gives you all three voice-first, push-realtime, with one identity wearing the right mask per thread. XP does.</p>
+    <div class="pillar-row">
+      <div class="pillar">
+        <div class="num">01</div>
+        <h3>Voice-first by design</h3>
+        <p>STT, TTS, barge-in baked in. Every thread reads itself, every reply is dictated. Hands-free OS.</p>
+      </div>
+      <div class="pillar">
+        <div class="num">02</div>
+        <h3>Push-realtime</h3>
+        <p>SSE on every new arrival. New email, new SMS, new WhatsApp ping &mdash; the screen updates inside a second. No refresh.</p>
+      </div>
+      <div class="pillar">
+        <div class="num">03</div>
+        <h3>Persona routing</h3>
+        <p>Same OS, multiple identities. Different signatures per thread without the cross-talk risk that kills multi-account apps.</p>
+      </div>
+      <div class="pillar">
+        <div class="num">04</div>
+        <h3>Universal connector</h3>
+        <p>Plug-and-play with any AI agent: Claude, GPT, Gemini, Grok. URL-as-credential, no auth headers, just works.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="stats">
+  <h2>Live right now</h2>
+  <p class="lede">This isn&rsquo;t a screenshot. The numbers below are from the production omninbox merge running on this server, refreshed every 5 seconds.</p>
+  <div class="stats">
+    <div class="stat"><div class="n" id="s-total">&mdash;</div><div class="l">Threads merged</div></div>
+    <div class="stat"><div class="n" id="s-beside">&mdash;</div><div class="l">Beside calls + SMS</div></div>
+    <div class="stat"><div class="n" id="s-spark">&mdash;</div><div class="l">Spark email</div></div>
+    <div class="stat"><div class="n" id="s-beeper">&mdash;</div><div class="l">Beeper chats</div></div>
+  </div>
+</section>
+
+<section class="cta-block">
+  <h2>Get on the early-access list</h2>
+  <p>XP is alpha and shipping to a small private list of operators first. If you want in, drop your email. Or just open it and use it.</p>
+  <div class="cta-row">
+    <a href="mailto:hello@xlrd.org?subject=XP%20early%20access" class="btn btn-primary">Email for access</a>
+    <a href="https://xen.xlrd.org/" class="btn btn-secondary">Open XP</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="links">
+    <a href="https://xen.xlrd.org/">Open XP</a>
+    <a href="https://xen.xlrd.org/api/health">Status</a>
+    <a href="mailto:hello@xlrd.org">Contact</a>
+  </div>
+  <p style="margin-top:18px">XP is part of the Xen ecosystem from Self Exec S Corp / xlrd.org.</p>
+</footer>
+
+<script>
+  (async () => {
+    try {
+      const r = await fetch('/api/omni/threads');
+      const j = await r.json();
+      const c = (j.threads || []).reduce((a,t) => { a[t.source] = (a[t.source]||0) + 1; return a; }, {});
+      const total = (j.threads || []).length;
+      document.getElementById('thread-count').textContent = total;
+      document.getElementById('s-total').textContent = total;
+      document.getElementById('s-beside').textContent = c.beside || 0;
+      document.getElementById('s-spark').textContent = c.spark || 0;
+      document.getElementById('s-beeper').textContent = c.beeper || 0;
+    } catch {}
+  })();
+</script>
+
+</body>
+</html>

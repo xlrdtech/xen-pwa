@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000">
+<title>Xen Swipe</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #000; color: #fff; font-family: system-ui, -apple-system, sans-serif; }
+.viewport {
+  width: 100vw; height: 100vh;
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.viewport::-webkit-scrollbar { display: none; }
+.page {
+  flex: 0 0 100vw;
+  height: 100vh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  position: relative;
+  background: #111;
+}
+.page iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+.page .label {
+  position: absolute; top: env(safe-area-inset-top, 0); left: 0; right: 0;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+  font-size: 12px; font-weight: 600;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 10; color: #fff;
+}
+.page .label a { color: #4ca2ff; text-decoration: none; font-size: 11px; }
+.page .empty {
+  height: 100%; display: grid; place-items: center;
+  color: #888; font-size: 14px; padding: 24px; text-align: center;
+}
+.dots {
+  position: fixed; bottom: env(safe-area-inset-bottom, 12px); left: 0; right: 0;
+  display: flex; justify-content: center; gap: 8px;
+  padding: 12px; pointer-events: none; z-index: 20;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: background 0.2s, transform 0.2s; }
+.dot.active { background: #fff; transform: scale(1.3); }
+.settings-btn {
+  position: fixed; top: env(safe-area-inset-top, 8px); right: 8px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+  display: grid; place-items: center; cursor: pointer;
+  z-index: 30; color: #fff; font-size: 18px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.settings-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+  z-index: 100; display: none; padding: 20px;
+  padding-top: max(env(safe-area-inset-top, 0), 20px);
+  flex-direction: column; gap: 14px; overflow: auto;
+}
+.settings-modal.open { display: flex; }
+.settings-modal h2 { font-size: 18px; font-weight: 600; }
+.settings-modal label { font-size: 12px; color: #888; }
+.settings-modal input {
+  padding: 10px 14px; border-radius: 10px;
+  border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 14px;
+  width: 100%; font-family: inherit;
+}
+.settings-modal .row { display: flex; flex-direction: column; gap: 6px; }
+.settings-modal button {
+  padding: 12px; border-radius: 10px; border: 0;
+  background: #007aff; color: #fff; font-size: 15px; font-weight: 600;
+  cursor: pointer;
+}
+.settings-modal button.secondary { background: #2a2a2a; }
+.hint { font-size: 11px; color: #666; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="viewport" id="viewport"></div>
+<div class="dots" id="dots"></div>
+<div class="settings-btn" id="settings-btn">⚙</div>
+<div class="settings-modal" id="settings">
+  <h2>Xen Swipe — 3 pages</h2>
+  <div class="row"><label>Page 1 URL</label><input id="u1-input" placeholder="https://..."/></div>
+  <div class="row"><label>Page 1 title</label><input id="t1-input" placeholder="optional"/></div>
+  <div class="row"><label>Page 2 URL</label><input id="u2-input" placeholder="https://..."/></div>
+  <div class="row"><label>Page 2 title</label><input id="t2-input" placeholder="optional"/></div>
+  <div class="row"><label>Page 3 URL</label><input id="u3-input" placeholder="https://..."/></div>
+  <div class="row"><label>Page 3 title</label><input id="t3-input" placeholder="optional"/></div>
+  <button id="save-btn">Save & reload</button>
+  <button id="close-btn" class="secondary">Cancel</button>
+  <div class="hint">URLs persist to localStorage. Add to home screen for full-screen mobile mode.</div>
+</div>
+<script>
+function el(tag, props, kids) {
+  const n = document.createElement(tag);
+  if (props) for (const k in props) {
+    if (k === 'class') n.className = props[k];
+    else if (k === 'text') n.textContent = props[k];
+    else if (k === 'style') Object.assign(n.style, props[k]);
+    else n.setAttribute(k, props[k]);
+  }
+  if (kids) for (const c of kids) if (c) n.appendChild(c);
+  return n;
+}
+function shortHost(u) { try { return new URL(u).hostname; } catch { return u; } }
+
+const params = new URLSearchParams(location.search);
+let stored = {};
+try { stored = JSON.parse(localStorage.getItem('xen-swipe-cfg')) || {}; } catch (_) {}
+const cfg = {
+  u1: params.get('u1') || stored.u1 || 'https://xen.xlrd.org/3/',
+  u2: params.get('u2') || stored.u2 || 'https://xen.xlrd.org/health.html',
+  u3: params.get('u3') || stored.u3 || 'https://xen.xlrd.org/callers.html',
+  t1: params.get('t1') || stored.t1 || '',
+  t2: params.get('t2') || stored.t2 || '',
+  t3: params.get('t3') || stored.t3 || '',
+};
+
+function buildPage(idx, url, title) {
+  const page = el('div', { class: 'page', 'data-idx': String(idx) });
+  if (!url) {
+    const empty = el('div', { class: 'empty' });
+    empty.appendChild(document.createTextNode('Page ' + (idx + 1) + ' empty'));
+    empty.appendChild(el('br'));
+    const small = el('small', { text: 'Tap ⚙ to set URL' });
+    empty.appendChild(small);
+    page.appendChild(empty);
+    return page;
+  }
+  const label = el('div', { class: 'label' });
+  label.appendChild(el('span', { text: title || shortHost(url) }));
+  const link = el('a', { href: url, target: '_blank', rel: 'noopener', text: 'open ↗' });
+  label.appendChild(link);
+  const iframe = el('iframe', {
+    src: url,
+    allow: 'autoplay; clipboard-read; clipboard-write; microphone; camera; fullscreen',
+    referrerpolicy: 'no-referrer-when-downgrade',
+  });
+  page.appendChild(label);
+  page.appendChild(iframe);
+  return page;
+}
+
+const viewport = document.getElementById('viewport');
+const dots = document.getElementById('dots');
+[[cfg.u1, cfg.t1], [cfg.u2, cfg.t2], [cfg.u3, cfg.t3]].forEach(([u, t], i) => {
+  viewport.appendChild(buildPage(i, u, t));
+  dots.appendChild(el('div', { class: 'dot' + (i === 0 ? ' active' : '') }));
+});
+
+const dotEls = dots.querySelectorAll('.dot');
+viewport.addEventListener('scroll', () => {
+  const idx = Math.round(viewport.scrollLeft / window.innerWidth);
+  dotEls.forEach((d, i) => d.classList.toggle('active', i === idx));
+});
+
+const settings = document.getElementById('settings');
+document.getElementById('settings-btn').addEventListener('click', () => {
+  ['u1','t1','u2','t2','u3','t3'].forEach(k => { document.getElementById(k + '-input').value = cfg[k] || ''; });
+  settings.classList.add('open');
+});
+document.getElementById('close-btn').addEventListener('click', () => settings.classList.remove('open'));
+document.getElementById('save-btn').addEventListener('click', () => {
+  const next = {};
+  ['u1','t1','u2','t2','u3','t3'].forEach(k => { next[k] = document.getElementById(k + '-input').value.trim(); });
+  localStorage.setItem('xen-swipe-cfg', JSON.stringify(next));
+  const qs = new URLSearchParams();
+  for (const k of ['u1','u2','u3','t1','t2','t3']) if (next[k]) qs.set(k, next[k]);
+  location.search = '?' + qs.toString();
+});
+</script>
+</body>
+</html>

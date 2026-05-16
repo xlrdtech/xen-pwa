@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self Exec S Corp</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#08080f;--s:#0e0e1a;--b:#1e1e30;--gold:#c9a84c;--green:#2ddf7a;--red:#e84040;--blue:#4a9eff;--purple:#9b7fe8;--t:#e8e8f0;--m:#5a5a7a}
+html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--t);font-family:'Fraunces',serif;overflow-x:hidden}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid var(--b);background:linear-gradient(90deg,rgba(201,168,76,.08),transparent)}
+.logo{font-size:1.5rem;font-weight:700;letter-spacing:.04em;color:var(--gold)}
+.logo span{color:var(--t);font-weight:300}
+.pill{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.7rem;background:rgba(45,223,122,.12);border:1px solid rgba(45,223,122,.3);color:var(--green);padding:4px 10px;border-radius:20px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:p 1.5s ease-in-out infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:20px 28px}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+.card{background:var(--s);border:1px solid var(--b);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.ch{display:flex;align-items:center;justify-content:space-between}
+.ct{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--m);text-transform:uppercase;letter-spacing:.1em}
+.badge{font-family:'JetBrains Mono',monospace;font-size:.65rem;padding:2px 8px;border-radius:4px}
+.bg{background:rgba(45,223,122,.15);color:var(--green);border:1px solid rgba(45,223,122,.3)}
+.br{background:rgba(232,64,64,.15);color:var(--red);border:1px solid rgba(232,64,64,.3)}
+.bo{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3)}
+.bb{background:rgba(74,158,255,.15);color:var(--blue);border:1px solid rgba(74,158,255,.3)}
+.bp{background:rgba(155,127,232,.15);color:var(--purple);border:1px solid rgba(155,127,232,.3)}
+.num{font-size:2.4rem;font-weight:700;color:var(--gold);line-height:1}
+.numlabel{font-size:.8rem;color:var(--m);margin-top:4px}
+.pbar{height:6px;background:var(--b);border-radius:3px;overflow:hidden;margin-top:6px}
+.pfill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--green));width:0%}
+.items{display:flex;flex-direction:column;gap:6px}
+.item{display:flex;align-items:flex-start;gap:8px;font-size:.82rem;padding:8px 10px;border-radius:7px;background:rgba(255,255,255,.03);border:1px solid var(--b)}
+.d{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.do{background:rgba(232,64,64,.6)}
+.dp{background:rgba(201,168,76,.6)}
+.dd{background:rgba(45,223,122,.6)}
+.it{flex:1;line-height:1.3;overflow-wrap:break-word;word-break:normal;hyphens:none}
+.idu{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--m);white-space:nowrap;margin-left:auto;padding-left:8px}
+.dr{display:flex;align-items:center;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:.72rem;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.dr:last-child{border:none}
+.dup{color:var(--green)}
+.ddn{color:var(--red)}
+.duk{color:var(--m)}
+.feed{display:flex;flex-direction:column;gap:5px;max-height:280px;overflow-y:auto}
+.hit{font-size:.78rem;padding:7px 10px;border-radius:6px;background:rgba(255,255,255,.03);border-left:3px solid var(--blue);overflow-wrap:break-word;word-break:normal;hyphens:none}
+.hit.lyn{border-left-color:var(--purple)}
+.hit.eli{border-left-color:var(--gold)}
+.hm{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--m);margin-bottom:3px}
+.ht{color:var(--t);line-height:1.3}
+.full{grid-column:1/-1}
+.sec{padding:12px 28px 0;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--m);text-transform:uppercase;letter-spacing:.12em}
+.tsbar{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--m);text-align:right;padding:8px 28px 16px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Self Exec <span>S Corp</span></div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <span id="ss" class="badge bb">connecting</span>
+    <div class="pill"><div class="dot"></div><span id="clk">LIVE</span></div>
+  </div>
+</header>
+
+<div class="sec">Revenue + Debt</div>
+<div class="grid">
+  <div class="card">
+    <div class="ch"><span class="ct">Internal Debt</span><span class="badge br">DUE 05-16</span></div>
+    <div class="num">$4,010</div>
+    <div class="numlabel">floor — clear via revenue</div>
+    <div class="pbar"><div class="pfill"></div></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--m)">$0 cleared / $4,010 target</div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Revenue Opens</span><span class="badge bo">OPEN</span></div>
+    <div class="items">
+      <div class="item"><div class="d do"></div><div class="it">$210 self-fund</div><div class="idu">05-08</div></div>
+      <div class="item"><div class="d do"></div><div class="it">Anthony 84-lead drip activation</div><div class="idu">open</div></div>
+      <div class="item"><div class="d dp"></div><div class="it">UBS Lugano Deal #3 — pull from Lyn</div><div class="idu">via Lyn</div></div>
+      <div class="item"><div class="d dp"></div><div class="it">XLRDTECH $300 site-rebuild outreach</div><div class="idu">05-09</div></div>
+      <div class="item"><div class="d dp"></div><div class="it">XLRDTECH $33 custom-domain add-on</div><div class="idu">05-09</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">L7S CTO Queue</span><span class="badge bp">94 NOTIFS</span></div>
+    <div class="items">
+      <div class="item"><div class="d do"></div><div class="it">HubSpot Email Signature (Lyn direct ask)</div><div class="idu">P0</div></div>
+      <div class="item"><div class="d do"></div><div class="it">Sintra AI Vizzy 04-23 review</div><div class="idu">L7S U</div></div>
+      <div class="item"><div class="d dp"></div><div class="it">HERO HABITS @mention task 1214661638666801</div><div class="idu">top</div></div>
+      <div class="item"><div class="d dp"></div><div class="it">GHL sub-account (CRJ O.S.) setup</div><div class="idu">open</div></div>
+      <div class="item"><div class="d dp"></div><div class="it">E.A.T. meeting prep — 7/12 7:30 PM EST</div><div class="idu">7/12</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="sec">System Health</div>
+<div class="grid">
+  <div class="card">
+    <div class="ch"><span class="ct">Core Stack</span><span id="cb" class="badge bb">checking</span></div>
+    <div class="dr"><span>omnimind :4441</span><span id="d0" class="duk">...</span></div>
+    <div class="dr"><span>xen-sms :4442</span><span id="d1" class="duk">...</span></div>
+    <div class="dr"><span>apple-stt :4440</span><span id="d2" class="duk">...</span></div>
+    <div class="dr"><span>beeper REST :23373</span><span id="d3" class="duk">...</span></div>
+    <div class="dr"><span>android bridge</span><span id="d4" class="duk">...</span></div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Till Done — Backend</span><span class="badge br">DEBT</span></div>
+    <div class="items">
+      <div class="item"><div class="d do"></div><div class="it">Beeper REST down — Desktop restart needed</div><div class="idu">P0</div></div>
+      <div class="item"><div class="d do"></div><div class="it">beeper_poll.py list_messages — route to :23374</div><div class="idu">open</div></div>
+      <div class="item"><div class="d dp"></div><div class="it">Omni-inbox SSE live wiring</div><div class="idu">open</div></div>
+      <div class="item"><div class="d dp"></div><div class="it">SMS verify at recipient device</div><div class="idu">pending</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">L7S Universe</span><span class="badge bp">CTO</span></div>
+    <div class="items">
+      <div class="item"><div class="d dd"></div><div class="it">Lyn (Luckie) pane routing — live</div></div>
+      <div class="item"><div class="d dd"></div><div class="it">Eli (Anthony) pane routing — live</div></div>
+      <div class="item"><div class="d do"></div><div class="it">HERO M.A.K.E.R. Sheet — Lyn asked to update</div></div>
+      <div class="item"><div class="d dp"></div><div class="it">Beside AI setup for L7S, INC.</div></div>
+      <div class="item"><div class="d dp"></div><div class="it">Otter AI beta — qi named L7S pilot</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="sec">Live Hits</div>
+<div class="grid">
+  <div class="card full">
+    <div class="ch"><span class="ct">Inbound Feed</span><span id="hb" class="badge bb">0 new</span></div>
+    <div class="feed" id="feed">
+      <div class="hit lyn">
+        <div class="hm">LYN · P.O.P. CULTURE COLLECTIONS · 05:42</div>
+        <div class="ht">Luckie active — Food AI Hackathon, EATS content</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="tsbar" id="ts">updated —</div>
+
+<script>
+(function(){
+  var n=0;
+  var feed=document.getElementById('feed');
+  var hb=document.getElementById('hb');
+  var ss=document.getElementById('ss');
+  var cb=document.getElementById('cb');
+
+  function now(){return new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+  setInterval(function(){
+    document.getElementById('clk').textContent=now();
+    document.getElementById('ts').textContent='updated '+now();
+  },1000);
+
+  function setD(id,state){
+    var el=document.getElementById(id);
+    if(state==='UP'){el.textContent='UP';el.className='dup';}
+    else if(state==='DOWN'){el.textContent='DOWN';el.className='ddn';}
+    else{el.textContent='...';el.className='duk';}
+  }
+  function chk(id,url,test){
+    fetch(url,{signal:AbortSignal.timeout(3000)})
+      .then(function(r){return r.json();})
+      .then(function(d){setD(id,test(d)?'UP':'DOWN');})
+      .catch(function(){setD(id,'DOWN');});
+  }
+  function runHealth(){
+    chk('d0','http://127.0.0.1:4441/health',function(d){return d.ok||d.status==='ok';});
+    chk('d1','http://127.0.0.1:4442/health',function(d){return d.ok;});
+    chk('d2','http://127.0.0.1:4440/health',function(d){return d.ok||d.status;});
+    chk('d3','http://127.0.0.1:23373/v1/chats?limit=1',function(d){return d.items||Array.isArray(d);});
+    chk('d4','http://127.0.0.1:4441/api/bridge-status',function(d){return d.ok||d.bridgeActive;});
+    setTimeout(function(){
+      var downs=document.querySelectorAll('.ddn').length;
+      if(downs===0){cb.textContent='ALL UP';cb.className='badge bg';}
+      else if(downs<=2){cb.textContent=downs+' DOWN';cb.className='badge bo';}
+      else{cb.textContent=downs+' DOWN';cb.className='badge br';}
+    },4000);
+  }
+  runHealth();
+  setInterval(runHealth,30000);
+
+  function classify(chat,sender){
+    var b=(chat+' '+sender).toLowerCase();
+    if(/luckie|goggins|l7s|l7x/.test(b))return'lyn';
+    if(/anthony|vasquez|tracking/.test(b))return'eli';
+    return'';
+  }
+
+  function addHit(src,chat,sender,text,type){
+    n++;
+    hb.textContent=n+' new';
+    var wrap=document.createElement('div');
+    wrap.className='hit'+(type?' '+type:'');
+    var meta=document.createElement('div');
+    meta.className='hm';
+    meta.textContent=src+' · '+chat+' · '+now();
+    var body=document.createElement('div');
+    body.className='ht';
+    body.textContent=sender+': '+text;
+    wrap.appendChild(meta);
+    wrap.appendChild(body);
+    feed.insertBefore(wrap,feed.firstChild);
+    if(feed.children.length>50)feed.removeChild(feed.lastChild);
+  }
+
+  function connectSSE(){
+    ss.textContent='connecting';ss.className='badge bb';
+    var es=new EventSource('http://127.0.0.1:4441/events');
+    es.onopen=function(){ss.textContent='SSE live';ss.className='badge bg';};
+    es.onerror=function(){ss.textContent='SSE offline';ss.className='badge br';es.close();setTimeout(connectSSE,5000);};
+    es.addEventListener('beeper',function(e){
+      try{var d=JSON.parse(e.data);addHit('BEEPER',d.chatTitle||d.chat||'?',d.senderName||'?',d.text||'',classify(d.chatTitle||'',d.senderName||''));}catch(x){}
+    });
+    es.addEventListener('message',function(e){
+      try{
+        var d=JSON.parse(e.data);
+        if(d.source==='beeper'||d.source==='beside'||d.source==='spark'){
+          addHit((d.source||'').toUpperCase(),d.chat||d.label||'?',d.sender||'?',d.preview||d.text||'',classify(d.chat||d.label||'',d.sender||''));
+        }
+      }catch(x){}
+    });
+    es.addEventListener('omni',function(e){
+      try{var d=JSON.parse(e.data);if(d.event==='omni:new-thread')addHit(d.source||'OMNI',d.chat||'?',d.sender||d.label||'?',d.preview||'',classify(d.chat||'',d.sender||''));}catch(x){}
+    });
+  }
+  connectSSE();
+})();
+</script>
+</body>
+</html>

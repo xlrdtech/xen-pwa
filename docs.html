@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xen Operator Surfaces</title>
+<style>
+:root{--bg:#0a0d09;--bg-elev:#131814;--fg:#d6e1da;--fg-dim:#6e7a72;--accent:#00dc82;--steer:#ff6688;--memory:#b069f0;--border:rgba(255,255,255,0.08)}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:ui-monospace,Menlo,monospace;font-size:13px;line-height:1.5}
+body{padding:0 0 60px}
+header{position:sticky;top:0;background:var(--bg-elev);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:baseline;gap:14px;z-index:10}
+header h1{margin:0;font-size:14px;letter-spacing:.06em}
+header a{color:var(--accent);text-decoration:none;font-size:11px;border:1px solid rgba(0,220,130,.3);padding:3px 9px;border-radius:4px}
+header a:hover{background:rgba(0,220,130,.1)}
+section{padding:14px 18px;border-bottom:1px solid var(--border)}
+section h2{font-size:13px;font-weight:500;color:var(--accent);margin:0 0 8px;letter-spacing:.04em}
+section p{margin:6px 0;color:var(--fg-dim)}
+table{border-collapse:collapse;width:100%;margin:6px 0}
+td,th{padding:5px 9px;text-align:left;vertical-align:top;border-bottom:1px dashed rgba(255,255,255,.04)}
+th{color:var(--fg-dim);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+td.method{color:var(--accent);font-weight:500;width:60px}
+td.path{font-weight:500}
+td.cli{color:var(--memory);font-weight:500}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;background:rgba(255,255,255,.05);color:var(--fg-dim);font-size:10px;margin-right:4px}
+.tag.canon{background:rgba(0,220,130,.10);color:var(--accent)}
+.tag.steer{background:rgba(255,102,136,.10);color:var(--steer)}
+.tag.memory{background:rgba(176,105,240,.10);color:var(--memory)}
+code{background:rgba(255,255,255,.05);padding:1px 5px;border-radius:3px;font-size:12px}
+ul{margin:6px 0;padding-left:20px;color:var(--fg-dim)}
+li{margin:2px 0}
+</style></head><body>
+<header>
+  <h1>XEN OPERATOR SURFACES</h1>
+  <a href="/health.html">health</a>
+  <a href="/callers.html">callers</a>
+  <a href="/unified-log.html">unified log</a>
+  <a href="/index.html">PWA</a>
+</header>
+
+<section>
+  <h2>Voice agent loop (blind+limbless client surface)</h2>
+  <p>Caller dials → ADB sees ringing → caller-context writes <code>~/.xen_active_caller</code> + fires <code>/api/call-start</code> → CALLER MEMORY + VOICE_AGENT prep inject into firehose pane → caller's first words via whisper-live → CALLER MEMORY block precedes [VOICE id] transcript → AI replies with recognition → speak() → Loopback <code>out</code> → caller hears → call ends → caller-context fires <code>/api/call-end</code> → date-stamped recap in caller notes + SMS to qi.</p>
+</section>
+
+<section>
+  <h2>Endpoints — omnimind :4441</h2>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>Purpose</th></tr>
+    <tr><td class="method">GET</td><td class="path">/api/health</td><td>All daemons + sentinels + audio canon + DB count</td></tr>
+    <tr><td class="method">GET</td><td class="path">/api/snapshot</td><td>Full state dump: callers + last 100 turns + audio + sentinels + uptime</td></tr>
+    <tr><td class="method">GET</td><td class="path">/api/omni/threads</td><td>Unified Beeper + Beside + ADB threads (223+)</td></tr>
+    <tr><td class="method">GET</td><td class="path">/api/callers</td><td>Searchable list of 97 known callers <span class="tag memory">memory</span></td></tr>
+    <tr><td class="method">GET</td><td class="path">/api/per-caller-memory/&lt;e164&gt;</td><td>Recall caller record + recent turns</td></tr>
+    <tr><td class="method">GET</td><td class="path">/api/per-caller-memory/&lt;e164&gt;/summary</td><td>Prompt-ready text summary for AI persona</td></tr>
+    <tr><td class="method">POST</td><td class="path">/api/per-caller-memory/&lt;e164&gt;</td><td>Upsert name/alias/persona_hint/notes</td></tr>
+    <tr><td class="method">GET</td><td class="path">/api/calls/&lt;e164&gt;/last</td><td>Last call audit: turns + recap + duration</td></tr>
+    <tr><td class="method">POST</td><td class="path">/api/call-start</td><td>Auto-fired by caller-context. Pre-injects CALLER MEMORY + prep + SMS qi</td></tr>
+    <tr><td class="method">POST</td><td class="path">/api/call-end</td><td>Auto-fired on call drop. Writes recap to notes + SMS qi</td></tr>
+    <tr><td class="method">POST</td><td class="path">/api/operator-steer</td><td>Operator mid-call guidance <span class="tag steer">private</span></td></tr>
+    <tr><td class="method">GET</td><td class="path">/api/unified-log/stream</td><td>SSE feed of unified_context.jsonl (backfill + tail)</td></tr>
+    <tr><td class="method">POST</td><td class="path">/voice-transcript</td><td>Whisper STT entrypoint. Reads sentinel for caller E.164</td></tr>
+    <tr><td class="method">POST</td><td class="path">/incoming</td><td>Inbound SMS entrypoint (records + injects)</td></tr>
+    <tr><td class="method">POST</td><td class="path">/phone/dial</td><td>Outbound dial via tel: scheme</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>CLIs — ~/bin/</h2>
+  <table>
+    <tr><th>Command</th><th>Purpose</th></tr>
+    <tr><td class="cli">xen-reply "&lt;text&gt;"</td><td>Speak via locked voice + mirror SMS to 8672</td></tr>
+    <tr><td class="cli">xen-steer "&lt;guidance&gt;" [-c +e164]</td><td>Operator steer mid-call <span class="tag steer">private</span></td></tr>
+    <tr><td class="cli">xen-call &lt;number&gt; [-p "persona"]</td><td>Outbound dial w/ pre-loaded sentinel</td></tr>
+    <tr><td class="cli">xen-call-sim &lt;e164&gt; [name]</td><td>Simulate inbound call for regression testing</td></tr>
+    <tr><td class="cli">xen-seed-callers</td><td>Bulk-seed per-caller-memory from omni threads (NANP-validated)</td></tr>
+    <tr><td class="cli">xen-smoke [verbose|loop]</td><td>16-invariant smoke test (single-shot pings pane; loop is silent)</td></tr>
+    <tr><td class="cli">xen-status</td><td>Silent health check via /api/health, no pane spam</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Daemons (launchd, all KeepAlive)</h2>
+  <table>
+    <tr><th>Label</th><th>Purpose</th></tr>
+    <tr><td>com.exedus.xen-pane-watchdog</td><td>Auto-correct ~/.xen_tmux_target if it drifts</td></tr>
+    <tr><td>com.exedus.xen-smoke</td><td>Run smoke loop every 60s, log to ~/exedus/xen/logs/smoke.log</td></tr>
+    <tr><td>com.exedus.xen-caller-context</td><td>Poll ADB telephony, fire call-start/call-end on transitions</td></tr>
+    <tr><td>com.exedus.xen-snapshot</td><td>Hourly snapshot of full state to ~/exedus/xen/data/snapshots/, 14-day retention</td></tr>
+    <tr><td>com.xenv40.omnimind-4441</td><td>Central HTTP brain</td></tr>
+    <tr><td>com.exedus.adb-sms-listener</td><td>SMS in via ADB</td></tr>
+    <tr><td>com.exedus.imessage-watcher</td><td>iMessage integration</td></tr>
+    <tr><td>com.exedus.beside-inbox-poller</td><td>Beside inbox</td></tr>
+    <tr><td>com.exedus.beeper-at-xen-watcher</td><td>@xen /on /off subagent activation</td></tr>
+    <tr><td>com.sel.beeper-android-bridge-6666</td><td>Beeper via Android UI scrape</td></tr>
+    <tr><td>com.xen.voice-duplex</td><td>VAD + barge-in</td></tr>
+    <tr><td>com.xenv40.apple-stt</td><td>Apple speech STT (fallback)</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Canon (memory) <span class="tag canon">load-bearing</span></h2>
+  <ul>
+    <li>Voice is THE pillar — STT visibility, TTS reply, audio canon, barge-in, voice control</li>
+    <li>Audio devices: in/out are Rogue Amoeba virtual; never SwitchAudioSource away</li>
+    <li>No silent inject — every inject surfaces to firehose at full brightness</li>
+    <li>Parallel immediacy — fan independent steps in one assistant turn</li>
+    <li>No TUI questions — ask via xen-reply (voice+SMS), pane is for substance</li>
+    <li>Eyeless+handless users — clients voice-only, operator runs unified logs</li>
+    <li>@xen /on /off subagents — load-bearing, verify after every edit</li>
+    <li>Skills stay current — slash commands audited on every canon change</li>
+    <li>Beeper dead — SMS in = ADB, SMS out = :4442, strangers = Beside Maya</li>
+    <li>Xen always replies — xen-reply mirrors voice+SMS every turn</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Quick verify</h2>
+  <code>xen-status</code> — silent one-screen daemon check (no pane spam)<br>
+  <code>xen-smoke verbose</code> — full 16-invariant pass (single-shot pings pane)<br>
+  <code>curl -s http://127.0.0.1:4441/api/health | jq .ok</code> — should be true<br>
+  <code>xen-call-sim +18005551234 "Test"</code> — full inbound loop simulation<br>
+  <a href="/health.html">/health.html</a> — visual dashboard, auto-refresh
+</section>
+</body></html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>3 — XB triptych</title>
+<link rel="manifest" href="/3/manifest.webmanifest">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#000;color:#fff;font:14px -apple-system,system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;touch-action:none}
+  #rail{position:absolute;top:0;left:0;height:100%;width:300vw;display:flex;will-change:transform;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+  #rail.dragging{transition:none}
+  .pane{flex:0 0 100vw;width:100vw;height:100%;position:relative;display:flex;flex-direction:column;background:#0a0a0a}
+  .bar{flex:0 0 36px;display:flex;align-items:center;gap:8px;padding:0 10px;background:#111;border-bottom:1px solid #222;z-index:5}
+  .pill{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7df;background:#06202a;padding:3px 8px;border-radius:99px;flex:0 0 auto}
+  .url{flex:1 1 auto;background:#000;color:#9af;border:1px solid #222;border-radius:6px;padding:5px 9px;font:12px ui-monospace,monospace;outline:none;min-width:0}
+  .go{flex:0 0 auto;background:#1da;color:#000;border:0;border-radius:6px;padding:5px 10px;font-weight:600;font-size:12px;cursor:pointer}
+  .canvas{flex:1 1 auto;position:relative;overflow:hidden;background:#000}
+  .canvas img{width:100%;height:100%;object-fit:contain;background:#000;-webkit-user-drag:none;pointer-events:none;display:block}
+  .canvas .hit{position:absolute;inset:0;cursor:crosshair}
+  .dots{position:fixed;bottom:env(safe-area-inset-bottom,8px);left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10;padding:6px 12px;background:rgba(0,0,0,.55);border-radius:99px;backdrop-filter:blur(8px)}
+  .dot{width:14px;height:14px;border-radius:50%;background:#444;transition:background .2s;cursor:pointer}
+  .dot.on{background:#1da}
+  .err{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#f55;font:13px ui-monospace,monospace;text-align:center;padding:20px;display:none;z-index:2}
+  .err.show{display:block}
+  .placeholder{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#666;font:14px -apple-system;text-align:center;padding:30px;line-height:1.6;display:none}
+  .placeholder.show{display:block}
+</style>
+</head>
+<body>
+<div id="rail">
+  <section class="pane" data-id="mmm">
+    <div class="bar"><span class="pill">A · MMM · OMNINBOX</span><span style="flex:1 1 auto;color:#7df;font:12px ui-monospace,monospace;padding:0 8px">mmm.xlrd.org · live SSE</span></div>
+    <div class="canvas"><iframe src="/mirror/" style="width:100%;height:100%;border:0;background:#0a0a0c" title="mmm omninbox"></iframe></div>
+  </section>
+  <section class="pane" data-id="b">
+    <div class="bar"><span class="pill">B · GROK VOICE</span><input class="url" placeholder="url" value="https://grok.com/voice"><button class="go">GO</button></div>
+    <div class="canvas"><img alt=""><div class="hit"></div><div class="err">offline</div><div class="placeholder"></div></div>
+  </section>
+  <section class="pane" data-id="c">
+    <div class="bar"><span class="pill">C · GOOGLE VOICE</span><input class="url" placeholder="url" value="https://voice.google.com/u/0/calls"><button class="go">GO</button></div>
+    <div class="canvas"><img alt=""><div class="hit"></div><div class="err">offline</div><div class="placeholder">XB instance C not yet spawned.<br>Lights up when 9995/9994 come online.</div></div>
+  </section>
+</div>
+<div class="dots"><span class="dot on" data-i="0"></span><span class="dot" data-i="1"></span><span class="dot" data-i="2"></span></div>
+
+<script>
+(()=>{
+const rail = document.getElementById('rail');
+const dots = [...document.querySelectorAll('.dot')];
+const panes = [...document.querySelectorAll('.pane')];
+
+panes.forEach(p => {
+  const id = p.dataset.id;
+  const img = p.querySelector('img');
+  const err = p.querySelector('.err');
+  const ph  = p.querySelector('.placeholder');
+  const url = p.querySelector('.url');
+  const go  = p.querySelector('.go');
+  const hit = p.querySelector('.hit');
+
+  // MJPEG stream — direct img src, no iframe, no embed.
+  // omnimind proxies /xb/<id>/stream → 127.0.0.1:9999/9997/9995
+  const reload = ()=> { img.src = `/xb/${id}/stream?t=${Date.now()}`; };
+  img.onload  = ()=>{ err.classList.remove('show'); ph.classList.remove('show'); };
+  img.onerror = ()=>{ err.classList.add('show'); if(id==='c') ph.classList.add('show'); setTimeout(reload, 2500); };
+  reload();
+
+  // Tap on .hit handled by global pointerup handler below (swipe rail logic)
+
+  // URL navigate
+  const nav = ()=>{
+    const u = url.value.trim(); if(!u) return;
+    fetch(`/xb/${id}/cmd`, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'navigate', url:u})}).catch(()=>{});
+  };
+  go.addEventListener('click', nav);
+  url.addEventListener('keydown', e => { if(e.key === 'Enter') nav(); });
+});
+
+// JS-driven swipe rail (no native scroll, no scroll-snap quirks)
+let idx = 0;
+const N = 3;
+const W = ()=> window.innerWidth;
+const setIdx = (n, animate=true) => {
+  idx = Math.max(0, Math.min(N-1, n));
+  rail.classList.toggle('dragging', !animate);
+  rail.style.transform = `translateX(${-idx * W()}px)`;
+  dots.forEach((d,k)=> d.classList.toggle('on', k===idx));
+};
+setIdx(0, false);
+window.addEventListener('resize', ()=> setIdx(idx, false));
+
+let drag = null;
+const onDown = ev => {
+  // Don't start drag if touching an interactive element (input/button)
+  const tag = (ev.target && ev.target.tagName) || '';
+  if (tag === 'INPUT' || tag === 'BUTTON') return;
+  drag = { x0: ev.clientX, y0: ev.clientY, t0: Date.now(), tapped: ev.target.closest('.hit'), moved: false };
+  rail.classList.add('dragging');
+};
+const onMove = ev => {
+  if (!drag) return;
+  const dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0;
+  if (!drag.moved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) drag.moved = true;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    ev.preventDefault();
+    rail.style.transform = `translateX(${-idx * W() + dx}px)`;
+  }
+};
+const onUp = ev => {
+  if (!drag) return;
+  const dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0, dt = Date.now() - drag.t0;
+  rail.classList.remove('dragging');
+  // Tap on canvas hit-area (no significant movement, short duration)
+  if (!drag.moved && dt < 500 && drag.tapped) {
+    const hit = drag.tapped;
+    const r = hit.getBoundingClientRect();
+    const x = (ev.clientX - r.left) / r.width;
+    const y = (ev.clientY - r.top)  / r.height;
+    const id = hit.closest('.pane').dataset.id;
+    fetch(`/xb/${id}/cmd`, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'click_xy', x, y})}).catch(()=>{});
+    drag = null;
+    setIdx(idx);
+    return;
+  }
+  // Swipe — change pane if moved >25% of width OR fast flick (>0.5px/ms)
+  const threshold = W() * 0.25;
+  const flick = Math.abs(dx) / Math.max(dt,1);
+  if (dx < -threshold || (dx < 0 && flick > 0.5)) setIdx(idx + 1);
+  else if (dx > threshold || (dx > 0 && flick > 0.5)) setIdx(idx - 1);
+  else setIdx(idx);
+  drag = null;
+};
+window.addEventListener('pointerdown', onDown);
+window.addEventListener('pointermove', onMove, { passive: false });
+window.addEventListener('pointerup', onUp);
+window.addEventListener('pointercancel', ()=>{ drag = null; setIdx(idx); });
+
+dots.forEach((d,i)=> d.addEventListener('click', ()=> setIdx(i)));
+window.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT') return;
+  if(e.key === 'ArrowRight') setIdx(idx + 1);
+  if(e.key === 'ArrowLeft')  setIdx(idx - 1);
+});
+})();
+</script>
+</body>
+</html>

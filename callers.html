@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xen Callers</title>
+<style>
+:root{--bg:#0a0d09;--bg-elev:#131814;--fg:#d6e1da;--fg-dim:#6e7a72;--accent:#00dc82;--border:rgba(255,255,255,0.08);}
+*{box-sizing:border-box}html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--fg);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px}
+header{position:sticky;top:0;background:var(--bg-elev);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;gap:12px;align-items:center;z-index:10}
+header h1{margin:0;font-size:14px;letter-spacing:.04em}
+header input{background:transparent;color:var(--fg);border:1px solid var(--border);padding:5px 9px;border-radius:6px;font:inherit;width:280px}
+header button{background:rgba(0,220,130,.10);color:var(--accent);border:1px solid rgba(0,220,130,.40);padding:5px 10px;border-radius:6px;font:inherit;cursor:pointer}
+#log{padding:8px 12px;display:grid;grid-template-columns:160px 1fr 1fr 80px;gap:6px}
+.hd{color:var(--fg-dim);font-size:11px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);padding-bottom:4px}
+.cell{padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.04);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell.notes{white-space:normal;word-break:break-word;color:var(--fg-dim);font-size:12px}
+.cell.e164{color:var(--accent)}
+.btn-call{background:rgba(0,220,130,.16);color:var(--accent);border:1px solid rgba(0,220,130,.40);padding:3px 8px;border-radius:4px;cursor:pointer;font:inherit;font-size:11px}
+.empty{padding:30px;text-align:center;color:var(--fg-dim)}
+.count{color:var(--fg-dim);margin-left:auto}
+</style></head><body>
+<header>
+<h1>XEN CALLERS</h1>
+<input id="q" placeholder="search name / number / notes" />
+<button id="refresh">refresh</button>
+<span id="count" class="count"></span>
+</header>
+<main id="log"></main>
+<script>
+const logEl=document.getElementById('log'), q=document.getElementById('q'), countEl=document.getElementById('count');
+function fmtAgo(ms){if(!ms)return'';const d=Date.now()-ms;const m=Math.floor(d/60000);if(m<1)return'now';if(m<60)return m+'m';const h=Math.floor(m/60);if(h<24)return h+'h';const dd=Math.floor(h/24);return dd+'d ago'}
+function esc(s){return String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}
+async function load(){const url='/api/callers?limit=500'+(q.value?'&q='+encodeURIComponent(q.value):'');const r=await fetch(url);const d=await r.json();render(d.callers||[]);countEl.textContent=(d.count||0)+' callers'}
+function render(callers){
+  logEl.innerHTML='';
+  ['Last seen','E.164','Name / Notes','Action'].forEach(h=>{const e=document.createElement('div');e.className='hd';e.textContent=h;logEl.appendChild(e)});
+  if(!callers.length){const e=document.createElement('div');e.className='empty';e.style.gridColumn='1 / -1';e.textContent='No callers.';logEl.appendChild(e);return}
+  callers.forEach(c=>{
+    const ago=document.createElement('div');ago.className='cell';ago.textContent=fmtAgo(c.last_seen_at);logEl.appendChild(ago);
+    const num=document.createElement('div');num.className='cell e164';num.textContent=c.e164;logEl.appendChild(num);
+    const nn=document.createElement('div');nn.className='cell notes';nn.textContent=(c.name?c.name+' — ':'')+(c.notes||'');logEl.appendChild(nn);
+    const act=document.createElement('div');act.className='cell';
+    const btn=document.createElement('button');btn.className='btn-call';btn.textContent='call';btn.onclick=()=>fetch('/phone/dial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:c.e164})});
+    act.appendChild(btn);logEl.appendChild(act);
+  });
+}
+q.addEventListener('input',()=>{clearTimeout(q._t);q._t=setTimeout(load,200)});
+document.getElementById('refresh').addEventListener('click',load);
+load();setInterval(load,30000);
+</script>
+</body></html>

@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Xen 3 - omninbox</title>
+<link rel="stylesheet" href="/design-tokens/xen-tokens.css">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overscroll-behavior: none; }
+body {
+  font-family: var(--font-family);
+  color: var(--color-text-neutrals);
+  background: var(--color-background-app);
+  -webkit-font-smoothing: antialiased;
+  font-size: 13px;
+}
+.shell {
+  display: grid;
+  grid-template-columns: var(--filters-pane-width) 320px minmax(420px, 1fr) 360px;
+  grid-template-rows: var(--header-height) 1fr;
+  height: 100vh; width: 100vw;
+}
+.header {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--color-border-translucent-strong);
+  background: var(--color-background-header-right);
+  backdrop-filter: blur(20px);
+}
+.brand { font-weight: 700; font-size: 15px; color: var(--color-text-neutrals); letter-spacing: -0.02em; }
+.crumb { color: var(--color-text-neutrals-subtle); font-size: 12px; }
+.spacer { flex: 1; }
+.pill { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: var(--color-background-tag); color: var(--color-text-neutrals-subtle); }
+.pill.live { background: rgba(0,200,120,0.18); color: rgb(0,200,120); }
+.pane { overflow: hidden; display: flex; flex-direction: column; }
+.pane-filters {
+  background: var(--color-background-sidebar);
+  border-right: 1px solid var(--color-border-translucent-strong);
+  padding: 12px;
+  gap: 8px;
+}
+.filter-section { font-size: 11px; font-weight: 600; color: var(--color-text-neutrals-subtle); text-transform: uppercase; letter-spacing: 0.05em; margin: 12px 6px 6px; }
+.filter-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px; border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-text-neutrals);
+  font-size: 13px;
+}
+.filter-btn:hover { background: var(--color-background-app-weak); }
+.filter-btn.active { background: var(--color-background-selected-primary); color: var(--color-text-on-accent); }
+.filter-btn .icon { width: 16px; text-align: center; opacity: 0.7; }
+.filter-btn .badge { margin-left: auto; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--color-background-tag); color: var(--color-text-neutrals); }
+.filter-btn.active .badge { background: rgba(255,255,255,0.25); color: #fff; }
+.pane-threads {
+  background: var(--color-background-grouped);
+  border-right: 1px solid var(--color-border-translucent-strong);
+}
+.threads-search { padding: 10px 12px; border-bottom: 1px solid var(--color-border-translucent); }
+.threads-search input {
+  width: 100%; padding: 7px 10px; border-radius: 8px;
+  border: 1px solid var(--color-border-input);
+  background: var(--color-background-input);
+  color: var(--color-text-neutrals);
+  font-size: 13px; font-family: inherit; outline: none;
+}
+.threads-search input:focus { border-color: var(--color-primary); }
+.threads-list { flex: 1; overflow: auto; }
+.thread-row {
+  display: flex; gap: 10px; align-items: center;
+  height: var(--threads-list-item-height);
+  padding: 0 12px;
+  border-bottom: 1px solid var(--color-border-translucent);
+  cursor: pointer;
+  position: relative;
+}
+.thread-row:hover { background: var(--color-background-app-weak); }
+.thread-row.selected { background: var(--color-background-selected-primary); }
+.thread-row.selected .thread-name,
+.thread-row.selected .thread-snip,
+.thread-row.selected .thread-time { color: var(--color-text-on-accent); }
+.thread-row.unread .thread-name { font-weight: 700; }
+.thread-row.unread::before {
+  content: ''; position: absolute; left: 4px; top: 50%; width: 4px; height: 4px;
+  border-radius: 50%; background: var(--color-primary); transform: translateY(-50%);
+}
+.thread-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  color: #fff; font-size: 13px; font-weight: 600;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-translucent);
+}
+.thread-meta { flex: 1; min-width: 0; }
+.thread-name { font-size: 13.5px; font-weight: 600; color: var(--color-text-neutrals); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; }
+.thread-snip { font-size: 12px; color: var(--color-text-neutrals-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; margin-top: 2px; }
+.thread-time { font-size: 11px; color: var(--color-text-neutrals-subtle); flex-shrink: 0; }
+.skeleton-row {
+  display: flex; gap: 10px; align-items: center;
+  height: var(--threads-list-item-height);
+  padding: 0 12px;
+  border-bottom: 1px solid var(--color-border-translucent);
+}
+.skeleton-circle, .skeleton-line {
+  background: linear-gradient(90deg, var(--color-background-app-weak) 0%, var(--color-background-tag) 50%, var(--color-background-app-weak) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+.skeleton-circle { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+.skeleton-line { height: 10px; border-radius: 3px; margin-bottom: 6px; }
+.skeleton-line.short { width: 40%; }
+.skeleton-line.long { width: 80%; }
+@keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: -100% 50%; } }
+.pane-conversation {
+  background: var(--color-background-app);
+  border-right: 1px solid var(--color-border-translucent-strong);
+}
+.conv-head {
+  height: var(--header-height);
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-border-translucent-strong);
+  display: flex; align-items: center; gap: 12px;
+  background: var(--color-background-header-right);
+  backdrop-filter: blur(20px);
+}
+.conv-title { font-weight: 600; font-size: 14px; color: var(--color-text-neutrals); }
+.conv-sub { font-size: 12px; color: var(--color-text-neutrals-subtle); margin-left: auto; }
+.conv-body { flex: 1; overflow: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; }
+.conv-empty {
+  display: grid; place-items: center; height: 100%;
+  color: var(--color-text-neutrals-subtle);
+  font-size: 13px; padding: 24px; text-align: center;
+}
+.message { display: flex; gap: 8px; max-width: 78%; align-items: flex-end; }
+.message.sent { align-self: flex-end; flex-direction: row-reverse; }
+.bubble {
+  padding: 7px 11px;
+  border-radius: var(--border-radius-conversation-bubble, 17px);
+  background: var(--color-background-message-bubble-received);
+  color: var(--color-text-neutrals);
+  font-size: 13.5px; line-height: 1.35;
+  white-space: pre-wrap; word-break: break-word;
+}
+.message.sent .bubble {
+  background: var(--color-background-message-bubble-sent);
+  color: var(--color-text-on-accent);
+}
+.msg-meta { font-size: 10.5px; color: var(--color-text-neutrals-subtle); margin: 0 8px 4px; }
+.pane-right { background: var(--color-background-grouped); }
+.right-card {
+  margin: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--color-background-elevated);
+  border: 1px solid var(--color-border-translucent);
+}
+.right-card h4 { margin: 0 0 6px; font-size: 11px; font-weight: 600; color: var(--color-text-neutrals); text-transform: uppercase; letter-spacing: 0.05em; }
+.right-card p { margin: 0; font-size: 13px; color: var(--color-text-neutrals); line-height: 1.4; }
+.right-card .muted { color: var(--color-text-neutrals-subtle); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <span class="brand">Xen</span>
+    <span class="crumb">/3 - omninbox</span>
+    <span class="spacer"></span>
+    <span class="pill live" id="status">live</span>
+  </div>
+  <aside class="pane pane-filters">
+    <div class="filter-section">Inboxes</div>
+    <div class="filter-btn active" data-filter="all"><span class="icon">●</span><span>All</span><span class="badge" id="badge-all">—</span></div>
+    <div class="filter-btn" data-filter="unread"><span class="icon">○</span><span>Unread</span><span class="badge" id="badge-unread">0</span></div>
+    <div class="filter-section">Networks</div>
+    <div class="filter-btn" data-filter="telegram"><span class="icon">✈</span>Telegram</div>
+    <div class="filter-btn" data-filter="sms"><span class="icon">✉</span>SMS</div>
+    <div class="filter-btn" data-filter="discord"><span class="icon">◇</span>Discord</div>
+    <div class="filter-btn" data-filter="slack"><span class="icon">#</span>Slack</div>
+    <div class="filter-btn" data-filter="gmessages"><span class="icon">▼</span>Google Messages</div>
+  </aside>
+  <main class="pane pane-threads">
+    <div class="threads-search">
+      <input id="search" type="search" placeholder="Search 400 threads..."/>
+    </div>
+    <div class="threads-list" id="threads">
+      <div class="skeleton-row"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton-row"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton-row"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton-row"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton-row"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton-row"><div class="skeleton-circle"></div><div style="flex:1"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div></div>
+    </div>
+  </main>
+  <section class="pane pane-conversation">
+    <div class="conv-head">
+      <div class="conv-title" id="conv-title">Select a thread</div>
+      <div class="conv-sub" id="conv-sub"></div>
+    </div>
+    <div class="conv-body" id="messages">
+      <div class="conv-empty">Click any thread on the left to load messages.</div>
+    </div>
+  </section>
+  <aside class="pane pane-right">
+    <div class="right-card"><h4>Active caller</h4><p id="caller" class="muted">none</p></div>
+    <div class="right-card"><h4>Matrix</h4><p id="matrix-id" class="muted">checking...</p></div>
+    <div class="right-card"><h4>Health</h4><p id="health" class="muted">checking...</p></div>
+    <div class="right-card"><h4>Stats</h4><p><span id="room-count">—</span> rooms loaded</p></div>
+  </aside>
+</div>
+<script>
+function el(tag, props, kids) {
+  const n = document.createElement(tag);
+  if (props) for (const k in props) {
+    if (k === 'class') n.className = props[k];
+    else if (k === 'text') n.textContent = props[k];
+    else if (k === 'on') for (const ev in props.on) n.addEventListener(ev, props.on[ev]);
+    else n.setAttribute(k, props[k]);
+  }
+  if (kids) for (const c of kids) n.appendChild(c);
+  return n;
+}
+function shortName(s) {
+  if (!s) return '?';
+  return String(s).replace(/^@/, '').split(':')[0].split('_').slice(-1)[0] || '?';
+}
+function fmtTs(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const diffDays = (now - d) / 86400000;
+  if (diffDays < 7) return d.toLocaleDateString([], { weekday: 'short' });
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+function avatarColor(seed) {
+  let h = 0;
+  for (const c of String(seed || '?')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return `hsl(${h % 360}, 50%, 55%)`;
+}
+let allRooms = [];
+let activeRoomId = null;
+let myUserId = '';
+let activeFilter = 'all';
+
+function applyFilter(rooms) {
+  const search = document.getElementById('search').value.trim().toLowerCase();
+  let filtered = rooms;
+  if (activeFilter === 'unread') filtered = filtered.filter(r => r.unread > 0);
+  else if (activeFilter !== 'all') filtered = filtered.filter(r => (r.roomId || '').toLowerCase().includes(activeFilter));
+  if (search) filtered = filtered.filter(r => (r.name || '').toLowerCase().includes(search) || (r.lastMessage || '').toLowerCase().includes(search));
+  return filtered;
+}
+
+function renderRooms(rooms) {
+  const root = document.getElementById('threads');
+  const filtered = applyFilter(rooms);
+  root.textContent = '';
+  if (filtered.length === 0) {
+    root.appendChild(el('div', { class: 'conv-empty', text: 'No threads match.' }));
+    return;
+  }
+  for (const r of filtered) {
+    const title = r.name || shortName(r.heroes && r.heroes[0]) || r.roomId.slice(0, 12);
+    const snip = (r.lastMessage || '').slice(0, 80);
+    const initial = (title || '?').trim().charAt(0).toUpperCase() || '?';
+    const time = fmtTs(r.lastTs);
+    const avatar = el('div', { class: 'thread-avatar', text: initial });
+    avatar.style.background = `linear-gradient(135deg, ${avatarColor(title)}, ${avatarColor(title + 'x')})`;
+    const row = el('div', {
+      class: 'thread-row' + (r.unread > 0 ? ' unread' : '') + (r.roomId === activeRoomId ? ' selected' : ''),
+      'data-room': r.roomId,
+      on: { click: () => loadRoom(r.roomId, title) },
+    }, [
+      avatar,
+      el('div', { class: 'thread-meta' }, [
+        el('div', { class: 'thread-name', text: title }),
+        el('div', { class: 'thread-snip', text: snip || '(no recent text)' }),
+      ]),
+      el('div', { class: 'thread-time', text: time }),
+    ]);
+    root.appendChild(row);
+  }
+}
+
+async function loadRoom(roomId, title) {
+  activeRoomId = roomId;
+  document.getElementById('conv-title').textContent = title || roomId;
+  document.getElementById('conv-sub').textContent = 'loading...';
+  const root = document.getElementById('messages');
+  root.textContent = '';
+  renderRooms(allRooms);
+  try {
+    const res = await fetch(`/api/matrix/room/${encodeURIComponent(roomId)}/messages?limit=50`);
+    const data = await res.json();
+    if (activeRoomId !== roomId) return;
+    root.textContent = '';
+    document.getElementById('conv-sub').textContent = `${(data.messages || []).length} messages`;
+    if ((data.messages || []).length === 0) {
+      root.appendChild(el('div', { class: 'conv-empty', text: '(no recent text — Beeper bridges encrypt media events; plaintext via desktop bridge pending)' }));
+      return;
+    }
+    for (const m of data.messages) {
+      const sender = shortName(m.sender);
+      const sent = m.sender === myUserId;
+      const time = fmtTs(m.ts);
+      const wrap = el('div', { class: 'message' + (sent ? ' sent' : '') });
+      if (!sent) {
+        const av = el('div', { class: 'thread-avatar', text: (sender || '?').charAt(0).toUpperCase() });
+        av.style.width = '24px'; av.style.height = '24px'; av.style.fontSize = '10px';
+        av.style.background = `linear-gradient(135deg, ${avatarColor(sender)}, ${avatarColor(sender + 'x')})`;
+        wrap.appendChild(av);
+      }
+      wrap.appendChild(el('div', { class: 'bubble', text: m.body || `(${m.msgtype || 'event'})` }));
+      const metaWrap = el('div');
+      metaWrap.appendChild(wrap);
+      metaWrap.appendChild(el('div', { class: 'msg-meta', text: `${sender} · ${time}` }));
+      root.appendChild(metaWrap);
+    }
+    root.scrollTop = root.scrollHeight;
+  } catch (e) {
+    root.textContent = '';
+    root.appendChild(el('div', { class: 'conv-empty', text: 'fetch failed: ' + e.message }));
+  }
+}
+
+async function refreshInbox() {
+  try {
+    const res = await fetch('/api/matrix/rooms');
+    const data = await res.json();
+    if (data && data.ok && Array.isArray(data.rooms)) {
+      allRooms = data.rooms;
+      const unread = allRooms.filter(r => r.unread > 0).length;
+      document.getElementById('room-count').textContent = String(allRooms.length);
+      document.getElementById('badge-all').textContent = String(allRooms.length);
+      document.getElementById('badge-unread').textContent = String(unread);
+      document.querySelector('.threads-search input').placeholder = `Search ${allRooms.length} threads...`;
+      renderRooms(allRooms);
+    } else {
+      document.getElementById('threads').textContent = '';
+      document.getElementById('threads').appendChild(el('div', { class: 'conv-empty', text: 'inbox load failed: ' + (data.error || 'unknown') }));
+    }
+  } catch (e) {
+    document.getElementById('threads').textContent = '';
+    document.getElementById('threads').appendChild(el('div', { class: 'conv-empty', text: 'fetch failed: ' + e.message }));
+  }
+}
+
+document.getElementById('search').addEventListener('input', () => renderRooms(allRooms));
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.getAttribute('data-filter') || 'all';
+    renderRooms(allRooms);
+  });
+});
+
+fetch('/api/matrix/whoami').then(r => r.json()).then(j => {
+  myUserId = j.user_id || '';
+  document.getElementById('matrix-id').textContent = myUserId || j.error || 'unknown';
+}).catch(() => { document.getElementById('matrix-id').textContent = 'unreachable'; });
+
+fetch('/api/health').then(r => r.json()).then(j => {
+  document.getElementById('health').textContent = j.ok ? 'all green' : ((j.failures || []).join(', ') || 'mixed');
+}).catch(() => { document.getElementById('health').textContent = 'unreachable'; });
+
+refreshInbox();
+setInterval(refreshInbox, 60000);
+
+try {
+  const evt = new EventSource('/api/caller/stream');
+  evt.addEventListener('message', e => {
+    try { const d = JSON.parse(e.data); document.getElementById('caller').textContent = d.e164 || 'none'; } catch (_) {}
+  });
+} catch (_) {}
+</script>
+</body>
+</html>

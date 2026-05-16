@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xen Health</title>
+<style>
+:root{--bg:#0a0d09;--bg-elev:#131814;--fg:#d6e1da;--fg-dim:#6e7a72;--green:#00dc82;--red:#ff5566;--amber:#f0a060;--border:rgba(255,255,255,0.08)}
+*{box-sizing:border-box}html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--fg);font-family:ui-monospace,Menlo,monospace;font-size:13px}
+header{position:sticky;top:0;background:var(--bg-elev);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:baseline;gap:14px}
+header h1{margin:0;font-size:14px;letter-spacing:.05em}
+header .ts{color:var(--fg-dim);font-size:11px;margin-left:auto}
+.section{padding:10px 16px}.section h2{font-size:12px;font-weight:500;color:var(--fg-dim);margin:14px 0 8px;letter-spacing:.08em;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.tile{padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-elev);display:flex;align-items:center;justify-content:space-between}
+.tile .lbl{font-size:12px}
+.tile .v{font-size:11px;color:var(--fg-dim)}
+.tile.up{border-color:rgba(0,220,130,.4)}.tile.up .v{color:var(--green)}
+.tile.down{border-color:rgba(255,85,102,.5)}.tile.down .v{color:var(--red)}
+.tile.info{border-color:rgba(240,160,96,.3)}.tile.info .v{color:var(--amber)}
+.banner{padding:14px 16px;font-weight:500}
+.banner.ok{background:rgba(0,220,130,.10);color:var(--green);border-bottom:1px solid rgba(0,220,130,.3)}
+.banner.fail{background:rgba(255,85,102,.10);color:var(--red);border-bottom:1px solid rgba(255,85,102,.3)}
+</style></head><body>
+<header><h1>XEN HEALTH</h1><span class="ts" id="ts">—</span></header>
+<div id="banner" class="banner">loading…</div>
+<div class="section">
+  <h2>Daemons</h2><div id="daemons" class="grid"></div>
+  <h2>Sentinels</h2><div id="sentinels" class="grid"></div>
+  <h2>Audio canon</h2><div id="audio" class="grid"></div>
+  <h2>DB</h2><div id="db" class="grid"></div>
+</div>
+<script>
+const DAEMONS=['xen_say_worker','xen_pane_watchdog','xen_caller_context','xen_smoke','xen_claude_wrapper','voice_duplex','whisper_live','beside_inbox_poller','beeper_at_xen_watcher','imessage_watcher','beeper_android_bridge','answer_app'];
+const SENTINELS=['pty_socket','xen_tmux_target','on_call','active_caller','tts_speaking'];
+const AUDIO=['audio_out','audio_in'];
+function tile(label,val,kind){
+  const t=document.createElement('div');t.className='tile '+kind;
+  const l=document.createElement('span');l.className='lbl';l.textContent=label;
+  const v=document.createElement('span');v.className='v';v.textContent=val;
+  t.appendChild(l);t.appendChild(v);return t;
+}
+function fmtTime(ms){return new Date(ms).toLocaleTimeString()}
+async function refresh(){
+  try {
+    const r=await fetch('/api/health');const d=await r.json();
+    document.getElementById('ts').textContent=fmtTime(d.ts);
+    const banner=document.getElementById('banner');
+    banner.textContent=d.ok ? 'ALL GREEN — '+(d.failures.length===0?'no failures':'')+' (smoke '+(d.checks.callers_db_count||'?')+' callers)' : 'FAILURES: '+d.failures.join(', ');
+    banner.className='banner '+(d.ok?'ok':'fail');
+    const grids={daemons:document.getElementById('daemons'),sentinels:document.getElementById('sentinels'),audio:document.getElementById('audio'),db:document.getElementById('db')};
+    Object.values(grids).forEach(g=>g.innerHTML='');
+    DAEMONS.forEach(k=>grids.daemons.appendChild(tile(k,d.checks[k]?'up':'down',d.checks[k]?'up':'down')));
+    SENTINELS.forEach(k=>{const v=d.checks[k];const kind=k==='pty_socket'||k==='xen_tmux_target' ? (v?'up':'down') : 'info'; grids.sentinels.appendChild(tile(k,v?'present':'absent',kind))});
+    AUDIO.forEach(k=>grids.audio.appendChild(tile(k,d.checks[k]?'canonical':'DRIFT',d.checks[k]?'up':'down')));
+    grids.db.appendChild(tile('callers_db_count',d.checks.callers_db_count,'info'));
+  } catch(e) {
+    document.getElementById('banner').className='banner fail';document.getElementById('banner').textContent='health endpoint unreachable: '+e.message;
+  }
+}
+refresh();setInterval(refresh,5000);
+</script></body></html>

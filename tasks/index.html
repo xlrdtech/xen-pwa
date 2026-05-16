@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>XEN TASKS · live</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#0a0a0c;color:#e8e8ee;font:14px/1.45 -apple-system,'JetBrains Mono',ui-monospace,monospace;min-height:100vh}
+body{padding:20px;max-width:1400px;margin:0 auto}
+h1{font:600 22px/1 -apple-system;letter-spacing:.5px;margin-bottom:4px;color:#d9fff0}
+.sub{color:#7a7a85;font-size:11px;margin-bottom:24px;letter-spacing:.4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.card{background:#111114;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;min-height:120px}
+.card h2{font:600 11px/1 -apple-system;text-transform:uppercase;letter-spacing:1px;color:#a78bfa;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.card h2 .dot{width:8px;height:8px;border-radius:50%;background:#22d3a4;box-shadow:0 0 8px #22d3a4}
+.card h2 .dot.red{background:#ef4458;box-shadow:0 0 8px #ef4458}
+.row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed rgba(255,255,255,.04);font-size:12px}
+.row:last-child{border:0}
+.k{color:#7a7a85}
+.v{color:#e8e8ee;font-variant-numeric:tabular-nums;text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v.up{color:#22d3a4}
+.v.down{color:#ef4458}
+.empty{color:#3a3a44;font-size:11px;text-align:center;padding:20px 0}
+.stream{max-height:260px;overflow-y:auto;font-size:11px}
+.line{padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.03);color:#a8a8b0}
+.line .ts{color:#3a3a44;margin-right:6px}
+header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px}
+.tag{display:inline-block;padding:2px 6px;border-radius:3px;font-size:10px;background:rgba(167,139,250,.15);color:#a78bfa;letter-spacing:.5px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>XEN TASKS</h1>
+    <div class="sub">live daemon + tool-call monitor · self-contained · sse-driven</div>
+  </div>
+  <span class="tag" id="status">CONNECTING</span>
+</header>
+<div class="grid">
+  <div class="card"><h2>DAEMONS <span class="dot" id="d-dot"></span></h2><div id="daemons"></div></div>
+  <div class="card"><h2>MIRROR EVENTS</h2><div id="mirror"></div></div>
+  <div class="card"><h2>CB STATE</h2><div id="cb"></div></div>
+  <div class="card"><h2>XEN-REPLY-VVS RECENT</h2><div class="stream" id="vvs"></div></div>
+  <div class="card"><h2>BEEPER OUTBOUND</h2><div class="stream" id="beeper"></div></div>
+  <div class="card"><h2>SYSTEM</h2><div id="sys"></div></div>
+</div>
+<script>
+// Safe DOM helpers — never use innerHTML with dynamic content.
+const $ = (id) => document.getElementById(id);
+function clear(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+function mkRow(k, v, cls){
+  const r = document.createElement('div'); r.className = 'row';
+  const ks = document.createElement('span'); ks.className = 'k'; ks.textContent = k;
+  const vs = document.createElement('span'); vs.className = 'v' + (cls ? ' ' + cls : ''); vs.textContent = v;
+  r.appendChild(ks); r.appendChild(vs); return r;
+}
+function mkLine(ts, body){
+  const l = document.createElement('div'); l.className = 'line';
+  const t = document.createElement('span'); t.className = 'ts'; t.textContent = (ts || '').slice(11,19);
+  l.appendChild(t); l.appendChild(document.createTextNode(body)); return l;
+}
+function fillRows(elId, pairs){
+  const el = $(elId); clear(el);
+  if (!pairs.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'none'; el.appendChild(e); return; }
+  for (const [k,v,cls] of pairs) el.appendChild(mkRow(k, v, cls));
+}
+function fillStream(elId, items, fmt){
+  const el = $(elId); clear(el);
+  if (!items || !items.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'none'; el.appendChild(e); return; }
+  for (const it of items.slice(-10).reverse()) el.appendChild(mkLine(it.ts || '', fmt(it)));
+}
+async function jget(p){
+  try { const r = await fetch(p); return r.ok ? await r.json() : null; }
+  catch(e){ return null; }
+}
+async function refresh(){
+  const t = await jget('/tasks/state');
+  if (!t) { $('status').textContent = 'OFFLINE'; return; }
+  $('status').textContent = 'LIVE · ' + new Date().toLocaleTimeString();
+
+  const dh = t.daemons || {}; let allUp = true; const dpairs = [];
+  for (const [k,v] of Object.entries(dh)) {
+    const up = (v === 'up' || v === true);
+    if (!up) allUp = false;
+    dpairs.push([k, up ? 'up' : 'down', up ? 'up' : 'down']);
+  }
+  fillRows('daemons', dpairs);
+  $('d-dot').className = 'dot' + (allUp ? '' : ' red');
+
+  const m = t.mirror || {};
+  fillRows('mirror', [
+    ['events stored', String(m.events_count || 0)],
+    ['jsonl size', ((m.bytes || 0) / 1024).toFixed(1) + ' KB'],
+    ['last event', m.last_ts ? new Date(m.last_ts * 1000).toLocaleTimeString() : '—'],
+  ]);
+
+  const cb = t.cb || {};
+  fillRows('cb', [
+    ['url', (cb.url || '—').replace(/^https?:\/\//,'')],
+    ['title', cb.title || '—'],
+    ['tabs', String(cb.tabs || '—')],
+  ]);
+
+  fillStream('vvs', t.vvs, (l) => (l.text || '').slice(0, 120));
+  fillStream('beeper', t.beeper, (l) => '→' + (l.to || '?') + ': ' + (l.text || '').slice(0, 80));
+
+  const s = t.sys || {};
+  fillRows('sys', [
+    ['cpu load', s.load || '—'],
+    ['mem free', s.mem || '—'],
+    ['uptime', s.uptime || '—'],
+  ]);
+}
+refresh(); setInterval(refresh, 2000);
+</script>
+</body>
+</html>
