@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Xen</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0a0a0f;color:#e8e8f0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;overflow:hidden}
+#fullscreen-btn{position:fixed;bottom:44px;right:8px;background:rgba(26,26,40,.85);border:1px solid #2a2a44;border-radius:8px;color:#888;cursor:pointer;font-size:.85rem;padding:5px 8px;z-index:100;backdrop-filter:blur(4px)}
+#shell{display:none;flex-direction:column;height:100%}
+#tabs-bar{display:flex;align-items:center;background:#111118;border-bottom:1px solid #1e1e30;overflow-x:auto;padding:4px 4px 0;gap:2px;scrollbar-width:none;min-height:40px}
+#tabs-bar::-webkit-scrollbar{display:none}
+.tab{background:#1a1a28;border-radius:8px 8px 0 0;color:#888;cursor:pointer;font-size:.72rem;max-width:140px;min-width:60px;overflow:hidden;padding:6px 9px;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;transition:background .15s}
+.tab.active{background:#222238;color:#e8e8f0}
+#new-tab-btn{background:none;border:none;color:#555;cursor:pointer;font-size:1.2rem;flex-shrink:0;padding:2px 8px;line-height:1}
+#url-bar{display:flex;align-items:center;background:#111118;border-bottom:1px solid #1e1e30;gap:5px;padding:5px 7px}
+#url-input{background:#1a1a28;border:1px solid #2a2a40;border-radius:20px;color:#e8e8f0;flex:1;font-size:.88rem;outline:none;padding:6px 13px}
+#url-input:focus{border-color:#4444cc}
+#go-btn{background:#3333cc;border:none;border-radius:14px;color:#fff;cursor:pointer;font-size:.78rem;padding:6px 12px;flex-shrink:0}
+#mic-btn{background:#1a1a28;border:1px solid #2a2a40;border-radius:50%;color:#888;cursor:pointer;font-size:1rem;flex-shrink:0;height:34px;width:34px;display:flex;align-items:center;justify-content:center}
+#mic-btn.listening{border-color:#ff2244;background:#3a0a14;animation:pulse 1s infinite}
+#mode-btn{background:#1a1a28;border:1px solid #2a2a40;border-radius:14px;color:#888;cursor:pointer;font-size:.72rem;padding:5px 9px;flex-shrink:0;white-space:nowrap}
+#mode-btn.mobile-mode{border-color:#44aacc;color:#44aacc}
+#mode-btn.desktop-mode{border-color:#8844cc;color:#8844cc}
+#content{flex:1;position:relative;overflow:hidden;background:#0d0d18}
+#content-frame{position:absolute;inset:0;border:none;width:100%;height:100%;display:none}
+#content-screenshot{position:absolute;inset:0;display:none;flex-direction:column;background:#000}
+#screenshot-img{flex:1;width:100%;object-fit:contain;min-height:0}
+#keyboard-bar{display:flex;gap:5px;padding:6px 8px;background:#111118;border-top:1px solid #1e1e30;flex-shrink:0;align-items:center}
+#keyboard-input{flex:1;background:#1a1a28;border:1px solid #2a2a40;border-radius:20px;color:#e8e8f0;font-size:16px;padding:9px 14px;outline:none;-webkit-appearance:none}
+#keyboard-input:focus{border-color:#44aacc;background:#1a2030}
+#keyboard-enter{background:#3333cc;border:none;border-radius:12px;color:#fff;cursor:pointer;font-size:.9rem;padding:9px 14px;flex-shrink:0}
+#keyboard-back{background:#1a1a28;border:1px solid #2a2a40;border-radius:12px;color:#aaa;cursor:pointer;font-size:.9rem;padding:9px 12px;flex-shrink:0}
+#keyboard-active{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(68,170,204,.15);border:1px solid #44aacc55;border-radius:8px;color:#44aacc;font-size:.65rem;padding:3px 10px;pointer-events:none;display:none}
+#keyboard-hint{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);border-radius:8px;color:#aaa;font-size:.7rem;padding:4px 10px;pointer-events:none;white-space:nowrap}
+#content-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:.4}
+#content-placeholder .logo{font-size:3rem;letter-spacing:.2em}
+#content-placeholder .hint{font-size:.8rem}
+#status-bar{background:#0a0a12;border-top:1px solid #1a1a2a;color:#444;font-size:.66rem;padding:3px 10px;display:flex;justify-content:space-between}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
+.dot.green{background:#22cc66}.dot.red{background:#cc2244}.dot.grey{background:#444}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+</style>
+</head>
+<body>
+
+<div id="shell">
+  <div id="tabs-bar">
+    <button id="new-tab-btn" title="New tab">＋</button>
+  </div>
+  <div id="url-bar">
+    <input id="url-input" type="url" placeholder="Search or enter URL…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button id="go-btn">Go</button>
+    <button id="mic-btn" title="Voice">🎤</button>
+    <button id="mode-btn" title="Toggle mobile/desktop view"></button>
+  </div>
+  <div id="content">
+    <iframe id="content-frame"></iframe>
+    <div id="content-screenshot">
+      <div id="keyboard-active">⌨ input active on Mac</div>
+      <img id="screenshot-img" alt="Mac screen" draggable="false">
+      <div id="keyboard-hint">tap screen to type</div>
+      <div id="keyboard-bar">
+        <input id="keyboard-input" type="text" placeholder="Tap to type on Mac…" autocorrect="off" autocapitalize="none" autocomplete="off" spellcheck="false" enterkeyhint="send">
+        <button id="keyboard-enter">⏎</button>
+        <button id="keyboard-back">⌫</button>
+      </div>
+    </div>
+    <div id="content-placeholder">
+      <div class="logo">XEN</div>
+      <div class="hint">Connecting to Mac…</div>
+    </div>
+  </div>
+  <div id="status-bar">
+    <span id="conn-status"><span class="dot grey" id="conn-dot"></span>connecting…</span>
+    <span id="tab-count">0 tabs</span>
+  </div>
+</div>
+<button id="fullscreen-btn" title="Fullscreen" onclick="toggleFS()">⛶</button>
+
+<script>
+const API = (() => {
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'http://127.0.0.1:4441';
+  return 'https://api.xlrd.org';
+})();
+
+// Default: mobile if touch device
+let isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 1);
+let session = { tabs: [], activeId: null, seq: 0 };
+let sse = null;
+let screenshotTimer = null;
+
+// No gate. C4 + noauth-mandatory — every user lands directly in the shell.
+function openShell() {
+  document.getElementById('shell').style.display = 'flex';
+  applyMode();
+  connectSession();
+}
+openShell();
+
+// ── Mode toggle ───────────────────────────────────────────────────────────
+const modeBtn = document.getElementById('mode-btn');
+modeBtn.onclick = () => { isMobile = !isMobile; applyMode(); renderContent(); };
+function applyMode() {
+  if (isMobile) {
+    modeBtn.textContent = '📱 Mobile';
+    modeBtn.className = 'mobile-mode';
+  } else {
+    modeBtn.textContent = '🖥️ Desktop';
+    modeBtn.className = 'desktop-mode';
+  }
+}
+
+// ── Session sync ──────────────────────────────────────────────────────────
+function connectSession() {
+  if (sse) sse.close();
+  sse = new EventSource(`${API}/api/browser/events`);
+  sse.onopen = () => setConn(true);
+  sse.onerror = () => { setConn(false); setTimeout(connectSession, 3000); };
+  sse.addEventListener('session', e => {
+    session = JSON.parse(e.data);
+    renderTabs();
+    renderContent();
+  });
+}
+function setConn(ok) {
+  document.getElementById('conn-dot').className = `dot ${ok ? 'green' : 'red'}`;
+  document.getElementById('conn-status').childNodes[1].textContent = ok ? 'live' : 'reconnecting…';
+}
+
+// ── Tab rendering ─────────────────────────────────────────────────────────
+function renderTabs() {
+  const bar = document.getElementById('tabs-bar');
+  const btn = document.getElementById('new-tab-btn');
+  bar.querySelectorAll('.tab').forEach(el => el.remove());
+  session.tabs.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'tab' + (t.id === session.activeId ? ' active' : '');
+    el.textContent = t.title || urlHost(t.url) || 'New Tab';
+    el.title = t.url || '';
+    el.onclick = () => switchTab(t.id);
+    bar.insertBefore(el, btn);
+  });
+  document.getElementById('tab-count').textContent = `${session.tabs.length} tab${session.tabs.length !== 1 ? 's' : ''}`;
+  const active = session.tabs.find(t => t.id === session.activeId);
+  if (active) document.getElementById('url-input').value = active.url || '';
+}
+
+// ── Content: mobile=screenshot poll, desktop=iframe ───────────────────────
+function renderContent() {
+  const frame = document.getElementById('content-frame');
+  const ss = document.getElementById('content-screenshot');
+  const ph = document.getElementById('content-placeholder');
+  const active = session.tabs.find(t => t.id === session.activeId);
+  const url = active ? active.url : null;
+  const hasContent = url && url !== 'about:blank';
+
+  if (!hasContent) {
+    frame.style.display = 'none';
+    ss.style.display = 'none';
+    ph.style.display = 'flex';
+    stopScreenshotPoll();
+    return;
+  }
+  ph.style.display = 'none';
+  if (isMobile) {
+    frame.style.display = 'none';
+    ss.style.display = 'flex';
+    startScreenshotPoll(url);
+  } else {
+    stopScreenshotPoll();
+    ss.style.display = 'none';
+    frame.src = url;
+    frame.style.display = 'block';
+  }
+}
+
+let macHasInput = false;
+let inputPollTimer = null;
+
+function startScreenshotPoll(activeUrl) {
+  stopScreenshotPoll();
+  const img = document.getElementById('screenshot-img');
+  const kbInput = document.getElementById('keyboard-input');
+
+  // Tap screenshot → focus keyboard input so iOS keyboard opens
+  img.addEventListener('click', e => {
+    const rect = img.getBoundingClientRect();
+    const xPct = ((e.clientX - rect.left) / rect.width).toFixed(4);
+    const yPct = ((e.clientY - rect.top) / rect.height).toFixed(4);
+    // Click at tapped coordinate on Mac
+    cmd({ action: 'eval', js: `(()=>{const el=document.elementFromPoint(window.innerWidth*${xPct},window.innerHeight*${yPct});if(el){el.click();el.focus();}})()` });
+    // Open keyboard on mobile
+    kbInput.focus();
+  });
+
+  const poll = () => { img.src = `${API}/api/browser/screenshot?t=${Date.now()}`; };
+  poll();
+  screenshotTimer = setInterval(poll, 1200);
+
+  // Poll Mac for active input — auto-show keyboard badge + focus field
+  inputPollTimer = setInterval(async () => {
+    try {
+      const r = await fetch(`${API}/api/browser/cmd`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'eval', js:'(document.activeElement.tagName+":"+document.activeElement.type)' }) });
+      const d = await r.json();
+      const val = (d.result || '').toUpperCase();
+      const isInput = val.startsWith('INPUT') || val.startsWith('TEXTAREA') || val.startsWith('SELECT');
+      if (isInput && !macHasInput) {
+        macHasInput = true;
+        document.getElementById('keyboard-active').style.display = 'block';
+        document.getElementById('keyboard-hint').style.display = 'none';
+        kbInput.focus(); // auto-open keyboard
+      } else if (!isInput && macHasInput) {
+        macHasInput = false;
+        document.getElementById('keyboard-active').style.display = 'none';
+        document.getElementById('keyboard-hint').style.display = 'block';
+      }
+    } catch (_) {}
+  }, 1500);
+}
+
+function stopScreenshotPoll() {
+  if (screenshotTimer) { clearInterval(screenshotTimer); screenshotTimer = null; }
+  if (inputPollTimer) { clearInterval(inputPollTimer); inputPollTimer = null; }
+  macHasInput = false;
+}
+
+// ── Mobile keyboard wiring ────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const kbInput = document.getElementById('keyboard-input');
+
+  // Send text to Mac via native WebKit type action (handles all input frameworks)
+  function flushToMac() {
+    const text = kbInput.value;
+    if (!text) return;
+    cmd({ action: 'type', selector: ':focus', text });
+    kbInput.value = '';
+  }
+
+  kbInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); flushToMac(); sendEnterToMac(); }
+  });
+
+  document.getElementById('keyboard-enter').onclick = () => {
+    flushToMac();
+    sendEnterToMac();
+  };
+
+  document.getElementById('keyboard-back').onclick = () => {
+    if (kbInput.value) {
+      kbInput.value = kbInput.value.slice(0, -1);
+    } else {
+      cmd({ action: 'eval', js: `(()=>{const el=document.activeElement;if(el&&el.value!==undefined){el.value=el.value.slice(0,-1);el.dispatchEvent(new Event('input',{bubbles:true}));}})()` });
+    }
+  };
+
+  // Flush on blur (user tapped away)
+  kbInput.addEventListener('blur', () => { if (kbInput.value) flushToMac(); });
+});
+
+function sendEnterToMac() {
+  cmd({ action: 'eval', js: `(()=>{const el=document.activeElement;if(!el)return;['keydown','keyup'].forEach(t=>el.dispatchEvent(new KeyboardEvent(t,{key:'Enter',keyCode:13,bubbles:true})));if(el.form)el.form.requestSubmit?.();})()` });
+}
+function stopScreenshotPoll() {
+  if (screenshotTimer) { clearInterval(screenshotTimer); screenshotTimer = null; }
+}
+function toggleFS() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(()=>{});
+    document.getElementById('fullscreen-btn').textContent = '✕';
+  } else {
+    document.exitFullscreen();
+    document.getElementById('fullscreen-btn').textContent = '⛶';
+  }
+}
+
+// ── Commands ──────────────────────────────────────────────────────────────
+async function cmd(body) {
+  try {
+    const r = await fetch(`${API}/api/browser/cmd`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    return r.ok ? r.json() : {};
+  } catch { return {}; }
+}
+function switchTab(id) { cmd({ action: 'tab_focus', id }); }
+function navigate(raw) {
+  let url = raw.trim();
+  if (!url) return;
+  if (!/^https?:\/\//i.test(url)) url = url.includes('.') ? 'https://' + url : 'https://www.google.com/search?q=' + encodeURIComponent(url);
+  cmd({ action: 'navigate', url });
+  document.getElementById('url-input').value = url;
+}
+function urlHost(url) { try { return new URL(url).hostname.replace('www.',''); } catch { return url; } }
+
+// ── UI events ─────────────────────────────────────────────────────────────
+document.getElementById('new-tab-btn').onclick = () => cmd({ action: 'tab_new', url: 'https://google.com' });
+document.getElementById('go-btn').onclick = () => navigate(document.getElementById('url-input').value);
+document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') navigate(e.target.value); });
+
+// ── Voice ─────────────────────────────────────────────────────────────────
+const micBtn = document.getElementById('mic-btn');
+let recognition = null;
+micBtn.onclick = () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Voice not supported on this browser'); return; }
+  if (recognition && micBtn.classList.contains('listening')) { recognition.stop(); return; }
+  recognition = new SR();
+  recognition.lang = 'en-US'; recognition.interimResults = false;
+  recognition.onstart = () => micBtn.classList.add('listening');
+  recognition.onend = () => micBtn.classList.remove('listening');
+  recognition.onresult = e => navigate(e.results[0][0].transcript);
+  recognition.start();
+};
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+</script>
+</body>
+</html>
