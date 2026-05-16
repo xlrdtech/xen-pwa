@@ -27,11 +27,26 @@ export async function onRequestGet({ request, env }) {
   const stream = new ReadableStream({
     async start(controller) {
       let closed = false;
-      const send = (chunk) => { if (!closed) try { controller.enqueue(enc.encode(chunk)); } catch (_) { closed = true; } };
+      // Guard every enqueue: client disconnect can fire mid-write, after which
+      // controller.enqueue throws "Controller is already closed". Catching is
+      // not enough — we must also flip the `closed` flag so the upstream loop
+      // stops trying. Without this the worker would burn CPU enqueuing into a
+      // dead controller until the upstream fetch timed out.
+      const send = (chunk) => {
+        if (closed) return;
+        try {
+          controller.enqueue(enc.encode(chunk));
+        } catch (_) {
+          closed = true;
+        }
+      };
 
       send(': connected\n\n');
 
-      const heartbeat = setInterval(() => send(`: heartbeat ${Date.now()}\n\n`), 15000);
+      const heartbeat = setInterval(() => {
+        if (closed) { clearInterval(heartbeat); return; }
+        send(`: heartbeat ${Date.now()}\n\n`);
+      }, 15000);
 
       let attempt = 0;
       const connectUpstream = async () => {
@@ -61,12 +76,15 @@ export async function onRequestGet({ request, env }) {
         }
       };
 
-      // Client disconnect — release everything.
-      request.signal.addEventListener('abort', () => {
+      // Client disconnect — release everything. Idempotent so a duplicate
+      // abort + the upstream loop's natural exit don't double-close.
+      const teardown = () => {
+        if (closed) return;
         closed = true;
         clearInterval(heartbeat);
         try { controller.close(); } catch (_) {}
-      });
+      };
+      request.signal.addEventListener('abort', teardown);
 
       // Fire upstream loop in the background; the controller is the keep-alive.
       connectUpstream().catch(() => {});

@@ -9,7 +9,13 @@ export async function onRequest({ request, env, params }) {
   const upstreamUrl = origin + url.pathname + (url.search || '');
 
   if (request.method === 'GET') {
-    const cacheKey = 'omni:' + url.pathname + url.search;
+    // Sort query params so /threads?a=1&b=2 and /threads?b=2&a=1 hit the
+    // same cache entry. Without this two callers asking for identical data
+    // with differently-ordered params would each cause an upstream fetch +
+    // separate KV write.
+    const sortedParams = new URLSearchParams([...url.searchParams.entries()].sort());
+    const sortedSearch = sortedParams.toString();
+    const cacheKey = 'omni:' + url.pathname + (sortedSearch ? '?' + sortedSearch : '');
     try {
       const r = await fetch(upstreamUrl, { signal: AbortSignal.timeout(6000) });
       if (!r.ok) throw new Error('upstream ' + r.status);
