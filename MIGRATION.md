@@ -42,7 +42,7 @@ Net effect: the client's EventSource never sees `onerror` triggered by Mac death
 
 ## URLs
 
-- Source: https://github.com/xlrdtech/xen-pwa
-- Failover (always up): https://xlrdtech.github.io/xen-pwa/
-- Primary (once CF Pages + DNS wired): https://pwa.xlrd.org/
-- Legacy Mac-tunnel: https://xen.xlrd.org/ (still works when Mac is up; will be retired or aliased to CF Pages later)
+- Source: <https://github.com/xlrdtech/xen-pwa>
+- Failover (always up): <https://xlrdtech.github.io/xen-pwa/>
+- Primary (once CF Pages + DNS wired): <https://pwa.xlrd.org/>
+- Legacy Mac-tunnel: <https://xen.xlrd.org/> (still works when Mac is up; will be retired or aliased to CF Pages later)
