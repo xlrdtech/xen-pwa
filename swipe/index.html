@@ -113,10 +113,13 @@ function shortHost(u) { try { return new URL(u).hostname; } catch { return u; } 
 const params = new URLSearchParams(location.search);
 let stored = {};
 try { stored = JSON.parse(localStorage.getItem('xen-swipe-cfg')) || {}; } catch (_) {}
+// Defaults point at the always-up GH Pages mirror so the swipe shell survives Mac death.
+// qi overrides per-pane via the ⚙ settings modal; choices persist in localStorage.
+const GHP = 'https://xlrdtech.github.io/xen-pwa';
 const cfg = {
-  u1: params.get('u1') || stored.u1 || 'https://xen.xlrd.org/3/',
-  u2: params.get('u2') || stored.u2 || 'https://xen.xlrd.org/health.html',
-  u3: params.get('u3') || stored.u3 || 'https://xen.xlrd.org/callers.html',
+  u1: params.get('u1') || stored.u1 || GHP + '/3/',
+  u2: params.get('u2') || stored.u2 || GHP + '/mirror/',
+  u3: params.get('u3') || stored.u3 || GHP + '/xen-status.html',
   t1: params.get('t1') || stored.t1 || '',
   t2: params.get('t2') || stored.t2 || '',
   t3: params.get('t3') || stored.t3 || '',
